@@ -1,5 +1,12 @@
 # 統一レビュー：Glyph Soup 研究計画書
 
+> **Document Role:** Peer Review of [`research_plan.md`](research_plan.md)
+> **Input:** [`research_plan.md`](research_plan.md)（研究計画）+ [`生命の起源とアセンブリ理論レポート.md`](生命の起源とアセンブリ理論レポート.md)（アセンブリ理論の参照資料）
+> **Output:** 2件の独立レビューを統合した優先度付き問題リストと推奨アクション
+> **Next:** See [`spec.md`](spec.md) — this review's findings were addressed in the implementation specification.
+
+---
+
 ## 致命的問題（研究の成立に直結）
 
 ### C1. 生命判定指標の定義が原論文と乖離している

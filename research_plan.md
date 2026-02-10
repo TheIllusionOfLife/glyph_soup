@@ -1,5 +1,9 @@
 # Research Project: Glyph Soup
 
+> **Document Role:** Initial Research Proposal
+> **Status:** Draft — reviewed, issues identified
+> **Next:** See [`review_unified.md`](review_unified.md) for peer review, then [`spec.md`](spec.md) for the revised implementation specification.
+
 ## Simulation of Emergent Assembly in Artificial Chemistry
 
 ## 1. プロジェクト概要
