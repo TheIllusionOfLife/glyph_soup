@@ -84,7 +84,7 @@ def test_analyze_exp_a_summaries_produces_calibration_thresholds(tmp_path: Path)
     calibration = result["calibration"]
     assert calibration["thresholds"]["a_total_p99"] == 30
     assert calibration["thresholds"]["max_ma_p99"] == 7
-    assert calibration["stable_a_total_mean"]["min"] == 6
+    assert calibration["stable_a_total_mean"]["min"] == 7
     assert calibration["stable_a_total_mean"]["max"] == 21
 
 

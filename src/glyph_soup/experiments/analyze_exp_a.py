@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import math
 from pathlib import Path
 from statistics import mean, median
+
+from glyph_soup.experiments.transition_detection import detect_transition_acceleration
 
 
 def _percentile(values: list[int], q: float) -> int:
@@ -40,6 +43,11 @@ def analyze_exp_a_summaries(
     input_dir: Path,
     *,
     out_path: Path | None = None,
+    stable_start: int = 50_000,
+    stable_end: int = 100_000,
+    transition_window: int = 1000,
+    transition_k: int = 500,
+    require_traces: bool = False,
 ) -> dict[str, object]:
     """Aggregate per-seed Experiment A summary files."""
     summary_paths = sorted(input_dir.glob("seed_*/summary_seed_*.json"))
@@ -51,6 +59,9 @@ def analyze_exp_a_summaries(
     seed_ids: list[int] = []
     a_totals: list[int] = []
     molecule_counts: list[int] = []
+    max_mas: list[int] = []
+    stable_means: list[int] = []
+    transitions: dict[str, dict[str, bool | int | float | None]] = {}
     for path in summary_paths:
         row = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(row, dict):
@@ -61,9 +72,33 @@ def analyze_exp_a_summaries(
         missing = required_keys - row.keys()
         if missing:
             raise ValueError(f"{path} missing required keys: {sorted(missing)}")
-        seed_ids.append(int(row["seed_id"]))
+        seed_id = int(row["seed_id"])
+        seed_ids.append(seed_id)
         a_totals.append(int(row["final_a_total"]))
         molecule_counts.append(int(row["final_molecule_count"]))
+        histogram = row.get("final_ma_histogram", {})
+        if isinstance(histogram, dict) and histogram:
+            max_mas.append(max(int(k) for k in histogram))
+        else:
+            max_mas.append(0)
+
+        trace_path = path.parent / f"trace_seed_{seed_id}.csv"
+        if trace_path.exists():
+            a_series = _read_a_total_series(trace_path)
+            stable_values = _stable_window_values(
+                trace_path,
+                stable_start=stable_start,
+                stable_end=stable_end,
+            )
+            stable_means.append(int(mean(stable_values)) if stable_values else 0)
+            transitions[str(seed_id)] = detect_transition_acceleration(
+                [float(v) for v in a_series],
+                window=transition_window,
+                k=transition_k,
+                theta=0.0,
+            )
+        elif require_traces:
+            raise FileNotFoundError(str(trace_path))
 
     payload: dict[str, object] = {
         "seed_count": len(seed_ids),
@@ -71,6 +106,16 @@ def analyze_exp_a_summaries(
         "a_total": _summarize(a_totals),
         "final_molecule_count": _summarize(molecule_counts),
         "a_total_p99": _percentile(a_totals, 0.99),
+        "calibration": {
+            "thresholds": {
+                "a_total_p99": _percentile(a_totals, 0.99),
+                "max_ma_p99": _percentile(max_mas, 0.99),
+                "transition_window": transition_window,
+                "transition_k": transition_k,
+            },
+            "stable_a_total_mean": _summarize(stable_means),
+            "transitions": transitions,
+        },
     }
 
     if out_path is not None:
@@ -78,3 +123,31 @@ def analyze_exp_a_summaries(
         out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     return payload
+
+
+def _read_a_total_series(trace_path: Path) -> list[int]:
+    with trace_path.open("r", encoding="utf-8", newline="") as f:
+        rows = list(csv.DictReader(f))
+    return [int(row["a_total"]) for row in rows]
+
+
+def _stable_window_values(
+    trace_path: Path,
+    *,
+    stable_start: int,
+    stable_end: int,
+) -> list[int]:
+    if stable_end < stable_start:
+        raise ValueError(
+            f"stable_end must be >= stable_start, got {stable_end} < {stable_start}"
+        )
+    with trace_path.open("r", encoding="utf-8", newline="") as f:
+        rows = list(csv.DictReader(f))
+    values = [
+        int(row["a_total"])
+        for row in rows
+        if stable_start <= int(row["step"]) <= stable_end
+    ]
+    if values:
+        return values
+    return [int(row["a_total"]) for row in rows]
