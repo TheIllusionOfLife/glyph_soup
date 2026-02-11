@@ -169,3 +169,68 @@ def test_catalyst_is_not_consumed_when_match_boosts_bond():
     # 3 molecules -> 2 substrates consumed + 1 product + catalyst retained = 2
     assert len(reactor.tank) == 2
     assert any(m.flat == "A" for m in reactor.tank)
+
+
+def test_catalyst_sampling_uses_randrange_without_choice_pool():
+    cfg = SimulationConfig(
+        initial_atoms=4,
+        p_bond=0.3,
+        max_steps=1,
+        catalysis=CatalysisConfig(enabled=True, mode="substring", boost=10.0),
+    )
+    reactor = Reactor([Atom("A"), Atom("B"), Atom("A"), Atom("C")])
+    chemist = Chemist()
+
+    class StubRng:
+        def __init__(self):
+            self.randrange_calls = 0
+
+        def random(self) -> float:
+            return 0.0
+
+        def sample(self, population, k):
+            assert k == 2
+            return [0, 1]
+
+        def randrange(self, n: int) -> int:
+            self.randrange_calls += 1
+            return 2
+
+        def choice(self, values):
+            raise AssertionError("choice should not be used for catalyst sampling")
+
+    rng = StubRng()
+    event = chemist.bond_step(reactor, cfg, rng)  # type: ignore[arg-type]
+
+    assert event is not None
+    assert rng.randrange_calls >= 1
+
+
+def test_catalysis_path_rolls_probability_before_sampling():
+    cfg = SimulationConfig(
+        initial_atoms=4,
+        p_bond=0.5,
+        max_steps=1,
+        catalysis=CatalysisConfig(enabled=True, mode="substring"),
+    )
+    reactor = Reactor([Atom("A"), Atom("B"), Atom("A"), Atom("D")])
+    chemist = Chemist()
+    calls: list[str] = []
+
+    class StubRng:
+        def random(self) -> float:
+            calls.append("random")
+            return 0.0
+
+        def sample(self, population, k):
+            calls.append("sample")
+            return [0, 1]
+
+        def randrange(self, n: int) -> int:
+            calls.append("randrange")
+            return 2
+
+    event = chemist.bond_step(reactor, cfg, StubRng())  # type: ignore[arg-type]
+
+    assert event is not None
+    assert calls[0] == "random"

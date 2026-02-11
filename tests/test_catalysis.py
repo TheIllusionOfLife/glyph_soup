@@ -87,3 +87,28 @@ def test_random_table_mode_is_deterministic_for_same_inputs():
     )
 
     assert r1 == r2
+
+
+def test_random_table_mode_is_order_invariant_for_substrates():
+    catalyst = join(Atom("A"), Atom("B"))
+    x = join(Atom("A"), Atom("C"))
+    y = join(Atom("B"), Atom("D"))
+
+    r1 = catalysis_matches(
+        "random_table",
+        catalyst,
+        x,
+        y,
+        seed_id=7,
+        match_prob=0.5,
+    )
+    r2 = catalysis_matches(
+        "random_table",
+        catalyst,
+        y,
+        x,
+        seed_id=7,
+        match_prob=0.5,
+    )
+
+    assert r1 == r2
