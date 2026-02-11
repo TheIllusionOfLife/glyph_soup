@@ -48,7 +48,7 @@ Use `uv` for all local runs and checks:
 
 ```bash
 # Package management (use uv, never pip install directly)
-uv sync
+uv sync --dev
 
 # Run tests
 uv run pytest tests/

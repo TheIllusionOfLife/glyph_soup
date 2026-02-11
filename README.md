@@ -1,6 +1,6 @@
 # Glyph Soup
 
-Glyph Soup is an artificial chemistry simulator for testing Assembly Theory style signals in a substrate-independent environment. It models molecules as binary trees, runs stochastic bond/break reactions, and tracks complexity metrics over time.
+Glyph Soup is an artificial chemistry simulator for testing Assembly-Theory-style signals in a substrate-independent environment. It models molecules as binary trees, runs stochastic bond/break reactions, and tracks complexity metrics over time.
 
 ## What this repository contains
 

@@ -342,39 +342,13 @@ X + Y + C → Join(X, Y) + C    確率: P_bond × boost(C, X, Y)
 
 ## 11. プロジェクト構成（モノレポ）
 
-```
-glyph_soup/
-├── README.md
-├── AGENTS.md
-├── PRODUCT.md
-├── TECH.md
-├── STRUCTURE.md
-├── spec.md                   # 本仕様書
-├── docs/
-│   ├── research/
-│   ├── reviews/
-│   └── reference/
-├── src/
-│   └── glyph_soup/
-│       ├── __init__.py
-│       ├── molecule.py       # 二分木データ構造
-│       ├── assembly.py       # MA計算アルゴリズム
-│       ├── reactor.py        # Reactor（タンク管理）
-│       ├── chemist.py        # Chemist（反応ルール）
-│       ├── observer.py       # Observer（指標計算・CSV出力）
-│       ├── simulate.py       # 実験実行オーケストレーション
-│       ├── config.py         # パラメータ管理
-│       └── experiments/
-│           ├── exp_a.py
-│           ├── analyze_exp_a.py
-│           └── transition_detection.py
-├── tests/
-│   └── golden_traces/
-├── .github/
-│   └── workflows/
-├── pyproject.toml
-└── uv.lock
-```
+リポジトリ構成の詳細は `STRUCTURE.md` を正本とする。`spec.md` では構成の責務のみ定義する。
+
+- 実装コード: `src/glyph_soup/`
+- 実験エントリと分析: `src/glyph_soup/experiments/`
+- テストと回帰フィクスチャ: `tests/` と `tests/golden_traces/`
+- 研究・レビュー・参照資料: `docs/`
+- プロジェクト運用ドキュメント: `README.md`, `AGENTS.md`, `PRODUCT.md`, `TECH.md`, `STRUCTURE.md`
 
 ---
 

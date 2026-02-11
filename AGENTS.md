@@ -20,10 +20,7 @@ uv run python -m glyph_soup.experiments.exp_a --seed-start 0 --seed-end 9 --step
 ## Code style and architecture rules
 
 - Molecules are binary trees (`Atom`, `Compound`), not free-form strings.
-- Preserve module boundaries:
-  - `reactor.py`: tank + mass bookkeeping
-  - `chemist.py`: probabilistic transitions
-  - `observer.py`: metric tracking and trace recording
+- `STRUCTURE.md` is the single source of truth for module boundaries and layout rules.
 - Maintain deterministic behavior for seeded runs; avoid accidental RNG call-order drift.
 - Keep code compatible with Ruff settings in `pyproject.toml`.
 
