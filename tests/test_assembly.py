@@ -14,7 +14,6 @@ from glyph_soup.assembly import (
 )
 from glyph_soup.molecule import Atom, join
 
-
 # ---------- Hand-computed MA ----------
 
 
