@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Glyph Soup** is an artificial chemistry simulation that tests whether Assembly Theory (AT) predictions hold in a substrate-independent system. Molecules are binary trees built from a 4-letter alphabet (A–D). The simulation tracks whether organized complexity (high MA × high copy number) can emerge from simple bonding/breaking rules, and whether adding catalysis or selection pressure produces detectable "assembly transitions."
 
-The authoritative document for implementation is **`spec.md`**. The research plan (`research_plan.md`) and peer review (`review_unified.md`) are retained for audit trail only.
+The authoritative document for implementation is **`spec.md`**. The research plan (`docs/research/research_plan.md`) and peer review (`docs/reviews/review_unified.md`) are retained for audit trail only.
 
 ## Architecture (Three-Module Design)
 
@@ -44,7 +44,7 @@ Supporting modules:
 
 ## Commands
 
-No build system exists yet. When implementation begins:
+Use `uv` for all local runs and checks:
 
 ```bash
 # Package management (use uv, never pip install directly)
