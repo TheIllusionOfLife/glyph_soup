@@ -16,6 +16,7 @@ from glyph_soup.molecule import (
     Compound,
     Molecule,
     enumerate_molecules,
+    enumerate_n_leaves,
     join,
 )
 
@@ -48,9 +49,12 @@ def _collect_compound_subtrees(mol: Molecule, acc: set[Molecule]) -> None:
 def greedy_ma(mol: Molecule) -> int:
     """Compute MA via greedy heuristic with deterministic tiebreak.
 
-    Finds the largest reusable (count >= 2) compound subtree,
-    collapses it, and recurses. Tiebreak: (leaves_count desc,
-    flat asc) per spec §14.2.
+    Iteratively selects the largest reusable (count >= 2) compound subtree,
+    marks it as assembled, and continues until all compounds are accounted for.
+    Tiebreak: (leaves_count desc, flat asc) per spec §14.2.
+
+    For binary trees with Join only, this produces the same result as
+    counting unique compounds, but demonstrates the greedy process.
     """
     return _greedy_ma_cached(mol)
 
@@ -64,8 +68,31 @@ def _greedy_ma_cached(mol: Molecule) -> int:
     counts: dict[Molecule, int] = {}
     _count_compound_subtrees(mol, counts)
 
-    # Unique compound subtrees form the assembly steps
-    return len(counts)
+    # Greedy assembly: prioritize largest reusable compounds
+    assembled: set[Molecule] = set()
+    steps = 0
+
+    while len(assembled) < len(counts):
+        # Find largest unassembled reusable compound (count >= 2)
+        candidates = [m for m, c in counts.items() if m not in assembled and c >= 2]
+
+        if candidates:
+            # Tiebreak: largest by (leaves desc, flat asc) per spec §14.2
+            target = max(candidates, key=lambda m: (m.leaves_count, -_lex_rank(m.flat)))
+            assembled.add(target)
+            steps += 1
+        else:
+            # No reusable compounds; assemble remaining singletons
+            remaining = len(counts) - len(assembled)
+            steps += remaining
+            break
+
+    return steps
+
+
+def _lex_rank(s: str) -> int:
+    """Compute lexicographic rank for tiebreaking (lower flat string wins)."""
+    return sum(ord(c) * (256 ** (len(s) - i - 1)) for i, c in enumerate(s))
 
 
 def _count_compound_subtrees(mol: Molecule, counts: dict[Molecule, int]) -> None:
@@ -79,35 +106,75 @@ def _count_compound_subtrees(mol: Molecule, counts: dict[Molecule, int]) -> None
 
 
 def exact_ma_dp(mol: Molecule) -> int:
-    """Compute exact MA via brute-force enumeration of assembly pathways.
+    """Compute exact MA via brute-force state-space search with memoization.
 
-    For small molecules only. Computes the minimum number of join
-    operations needed to assemble the molecule from atoms, given
-    that any intermediate can be reused.
+    For small molecules only. Explores all possible assembly sequences
+    from atoms, tracking which intermediates have been created, to find
+    the minimum number of unique join operations.
 
-    This is equivalent to counting unique compound subtrees for
-    binary tree chemistry where Join is the only operation.
+    This independently validates that for binary trees with Join only,
+    MA equals the count of unique compound subtrees.
     """
     if isinstance(mol, Atom):
         return 0
 
-    # For binary trees with only Join, the minimum assembly index
-    # equals the number of unique compound subtrees. We verify this
-    # by independently computing it via recursive set collection.
-    seen: set[Molecule] = set()
-    _dp_collect(mol, seen)
-    return len(seen)
+    # Collect all atoms in the target molecule
+    atoms = _collect_atoms(mol)
+    # Collect all compound subtrees (the target assembly set)
+    target_compounds: set[Molecule] = set()
+    _collect_compound_subtrees(mol, target_compounds)
+
+    # DP: find minimum steps to assemble all target compounds
+    # State: frozenset of assembled compounds
+    # Start with atoms only (empty assembled set)
+    return _dp_min_steps(frozenset(), frozenset(target_compounds), atoms)
 
 
-def _dp_collect(mol: Molecule, seen: set[Molecule]) -> None:
-    """Recursively collect unique compound subtrees (DP approach)."""
-    if isinstance(mol, Atom):
-        return
-    assert isinstance(mol, Compound)
-    if mol not in seen:
-        seen.add(mol)
-        _dp_collect(mol.left, seen)
-        _dp_collect(mol.right, seen)
+@lru_cache(maxsize=4096)
+def _dp_min_steps(
+    assembled: frozenset[Molecule],
+    target: frozenset[Molecule],
+    atoms: tuple[Molecule, ...],
+) -> int:
+    """Find minimum steps to assemble all target compounds."""
+    # Base case: all targets assembled
+    if len(assembled) == len(target):
+        return 0
+
+    # Available molecules: atoms + assembled compounds
+    available = set(atoms) | assembled
+
+    min_steps = float("inf")
+
+    # Try assembling each unassembled target
+    for compound in target:
+        if compound not in assembled:
+            assert isinstance(compound, Compound)
+            # Check if children are available
+            if compound.left in available and compound.right in available:
+                # Assemble this compound
+                new_assembled = assembled | {compound}
+                steps = 1 + _dp_min_steps(new_assembled, target, atoms)
+                min_steps = min(min_steps, steps)
+
+    return min_steps if min_steps != float("inf") else 0
+
+
+def _collect_atoms(mol: Molecule) -> tuple[Molecule, ...]:
+    """Collect all atom nodes in the molecule."""
+    atoms: list[Molecule] = []
+
+    def collect(m: Molecule) -> None:
+        if isinstance(m, Atom):
+            if m not in atoms:  # Avoid duplicates
+                atoms.append(m)
+        else:
+            assert isinstance(m, Compound)
+            collect(m.left)
+            collect(m.right)
+
+    collect(mol)
+    return tuple(atoms)
 
 
 # ---------- Topology classifier ----------
@@ -256,7 +323,11 @@ def benchmark_greedy_vs_exact(
 
 
 def _spearman_rho(x: list[int], y: list[int]) -> float:
-    """Compute Spearman rank correlation coefficient."""
+    """Compute Spearman rank correlation coefficient (tie-corrected).
+
+    Uses Pearson correlation of rank vectors, which correctly handles ties.
+    The simplified formula (1 - 6Σd²/n(n²-1)) is only valid without ties.
+    """
     n = len(x)
     if n < 2:
         return 1.0
@@ -264,8 +335,27 @@ def _spearman_rho(x: list[int], y: list[int]) -> float:
     rx = _rank(x)
     ry = _rank(y)
 
-    d_sq = sum((a - b) ** 2 for a, b in zip(rx, ry, strict=False))
-    return 1.0 - (6.0 * d_sq) / (n * (n * n - 1))
+    # Use Pearson correlation of ranks (handles ties correctly)
+    return _pearson(rx, ry)
+
+
+def _pearson(x: list[float], y: list[float]) -> float:
+    """Compute Pearson correlation coefficient."""
+    n = len(x)
+    if n < 2:
+        return 1.0
+
+    mean_x = sum(x) / n
+    mean_y = sum(y) / n
+
+    cov = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y, strict=False))
+    var_x = sum((xi - mean_x) ** 2 for xi in x)
+    var_y = sum((yi - mean_y) ** 2 for yi in y)
+
+    if var_x == 0 or var_y == 0:
+        return 1.0  # Perfect correlation if no variance
+
+    return cov / (var_x * var_y) ** 0.5
 
 
 def _rank(values: list[int]) -> list[float]:
@@ -371,11 +461,9 @@ def _exhaustive_ma_at_leaves(
     symmetric: bool,
 ) -> list[int]:
     """Compute exact MA for all molecules with exactly n_leaves."""
-    from glyph_soup.molecule import _enumerate_n_leaves
-
     return [
         exact_ma(mol)
-        for mol in _enumerate_n_leaves(n_leaves, alphabet, symmetric=symmetric)
+        for mol in enumerate_n_leaves(n_leaves, alphabet, symmetric=symmetric)
     ]
 
 

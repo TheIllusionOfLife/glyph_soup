@@ -218,13 +218,14 @@ def enumerate_molecules(
     In symmetric mode, join uses canonical ordering to deduplicate.
     """
     for n in range(1, max_leaves + 1):
-        yield from _enumerate_n_leaves(n, alphabet, symmetric=symmetric)
+        yield from enumerate_n_leaves(n, alphabet, symmetric=symmetric)
 
 
-def _enumerate_n_leaves(
-    n: int, alphabet: str, *, symmetric: bool
-) -> Iterator[Molecule]:
-    """Generate all molecules with exactly *n* leaves."""
+def enumerate_n_leaves(n: int, alphabet: str, *, symmetric: bool) -> Iterator[Molecule]:
+    """Generate all molecules with exactly *n* leaves.
+
+    Public API for generating molecules of a specific size.
+    """
     if n == 1:
         for ch in alphabet:
             yield Atom(ch)
@@ -236,8 +237,8 @@ def _enumerate_n_leaves(
         right_n = n - split
         if symmetric and left_n > right_n:
             continue  # avoid generating (right, left) duplicates
-        for left in _enumerate_n_leaves(left_n, alphabet, symmetric=symmetric):
-            for right in _enumerate_n_leaves(right_n, alphabet, symmetric=symmetric):
+        for left in enumerate_n_leaves(left_n, alphabet, symmetric=symmetric):
+            for right in enumerate_n_leaves(right_n, alphabet, symmetric=symmetric):
                 mol = join(left, right, symmetric=symmetric)
                 if mol not in seen:
                     seen.add(mol)

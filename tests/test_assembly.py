@@ -143,16 +143,12 @@ class TestClassifyTopology:
         assert classify_topology(abcd) == "chain"
 
     def test_mixed(self):
-        # (((A,B),C),(D,E)) — max_depth=3, min_depth=2
-        # 3 <= 2+1? Yes (3 <= 3) → balanced. Let's use deeper:
-        # (((A,B),(C,D)),E) — max_depth=3, min_depth=1
-        # 3 > 2×1? Yes → chain. Actually we need mixed.
-        # ((((A,B),C),D),(E,F)) — max_depth=4, min_depth=2
-        # 4 > 2+1=3? Yes (not balanced). 4 > 2×2=4? No → mixed
+        # ((((A,B),C),D),(E,F)) — max_depth=4, min_depth=2 → mixed
+        # Not balanced (4 > 2+1) and not chain (4 ≤ 2×2)
         ab = join(Atom("A"), Atom("B"))
         abc = join(ab, Atom("C"))
         abcd = join(abc, Atom("D"))
-        ef = join(Atom("A"), Atom("B"))  # reuse letters for simplicity
+        ef = join(Atom("A"), Atom("B"))
         tree = join(abcd, ef)
         assert classify_topology(tree) == "mixed"
 

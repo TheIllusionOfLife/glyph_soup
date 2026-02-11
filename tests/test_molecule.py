@@ -280,18 +280,8 @@ class TestEnumerateMolecules:
         assert all(isinstance(m, Atom) for m in mols)
 
     def test_two_leaves_asymmetric(self):
-        # 4 choices for left × 5 for right (4 atoms + need to check) ... actually:
-        # For 2-leaf asymmetric: 4 × 4 = 16 ordered pairs, but we also have
-        # the tree structure which for 2 leaves is unique: (L, R)
-        # Wait: for 2-leaf molecules, there's only one tree shape: (L, R).
-        # In asymmetric mode, (A,B) ≠ (B,A), so 4×4 = 16 molecules.
-        # But the plan says 20 for 2-leaf... Let me reconsider.
-        # Actually "2-leaf" with 4 alphabet: there's exactly 1 binary tree shape
-        # (single internal node), and 4×4 = 16 labelings.
-        # The plan says 20 which might include 1-leaf molecules.
-        # Let me just test 2-leaf alone:
+        # Asymmetric mode: 1-leaf (4 atoms) + 2-leaf (4×4 ordered pairs) = 20 total
         mols = list(enumerate_molecules(max_leaves=2, alphabet="ABCD", symmetric=False))
-        # 1-leaf: 4, 2-leaf: 4×4 = 16, total = 20
         assert len(mols) == 20
         assert len(set(mols)) == 20  # all unique
 

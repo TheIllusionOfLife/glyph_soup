@@ -18,6 +18,18 @@ class BreakFunction:
     alpha: float = 0.0
     beta: float = 0.01
 
+    def __post_init__(self) -> None:
+        """Validate break function parameters."""
+        valid_kinds = {"linear", "exponential", "node_count"}
+        if self.kind not in valid_kinds:
+            raise ValueError(
+                f"Invalid kind '{self.kind}', must be one of {valid_kinds}"
+            )
+        if self.alpha < 0:
+            raise ValueError(f"alpha must be non-negative, got {self.alpha}")
+        if self.beta < 0:
+            raise ValueError(f"beta must be non-negative, got {self.beta}")
+
 
 @dataclass(frozen=True)
 class SimulationConfig:
@@ -35,6 +47,28 @@ class SimulationConfig:
     break_function: BreakFunction = field(default_factory=BreakFunction)
     symmetric: bool = False
     seed_id: int = 0
+
+    def __post_init__(self) -> None:
+        """Validate simulation parameters."""
+        if not self.alphabet:
+            raise ValueError("alphabet cannot be empty")
+        if len(set(self.alphabet)) != len(self.alphabet):
+            raise ValueError("alphabet must contain unique characters")
+        if self.initial_atoms < 1:
+            raise ValueError(f"initial_atoms must be >= 1, got {self.initial_atoms}")
+        if self.max_atoms is not None and self.max_atoms < self.initial_atoms:
+            raise ValueError(
+                f"max_atoms ({self.max_atoms}) must be >= "
+                f"initial_atoms ({self.initial_atoms})"
+            )
+        if self.max_steps < 1:
+            raise ValueError(f"max_steps must be >= 1, got {self.max_steps}")
+        if self.n_seeds < 1:
+            raise ValueError(f"n_seeds must be >= 1, got {self.n_seeds}")
+        if not (0.0 <= self.p_bond <= 1.0):
+            raise ValueError(f"p_bond must be in [0, 1], got {self.p_bond}")
+        if self.seed_id < 0:
+            raise ValueError(f"seed_id must be non-negative, got {self.seed_id}")
 
     @property
     def alphabet_size(self) -> int:
