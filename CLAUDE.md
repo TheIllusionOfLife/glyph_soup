@@ -35,8 +35,8 @@ Supporting modules:
 
 | Phase | Focus | Key Deliverable |
 |-------|-------|-----------------|
-| 1 | Core + benchmark | `molecule.py`, `assembly.py`, MA ceiling gate, golden trace tests |
-| 2 | Simulation engine | `reactor.py`, `chemist.py`, `observer.py`, `config.py`, CSV output |
+| 1 | Core + benchmark | `molecule.py`, `assembly.py`, `config.py`, MA ceiling gate |
+| 2 | Simulation engine | `reactor.py`, `chemist.py`, `observer.py`, CSV output, golden trace generation |
 | 3 | Experiment A | 100 seeds × 100K steps, threshold calibration |
 | 4 | Experiment B | 3 catalysis methods (string match, tree match, random table) |
 | 5 | Experiment C | 4-factor ablation (resource → resistance → mutation → energy) |
