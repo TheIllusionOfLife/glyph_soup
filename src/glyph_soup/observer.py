@@ -13,10 +13,16 @@ from glyph_soup.reactor import Reactor
 class Observer:
     """Maintains incremental A_total and per-step records."""
 
-    def __init__(self, *, verify_every: int | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        verify_every: int | None = None,
+        record_unchanged: bool = False,
+    ) -> None:
         self.a_total: int = 0
         self.records: list[dict[str, int]] = []
         self.verify_every = verify_every
+        self.record_unchanged = record_unchanged
 
     def initialize(self, reactor: Reactor) -> None:
         self.a_total = self.full_scan_a_total(reactor)
@@ -38,7 +44,14 @@ class Observer:
             "a_total": self.a_total,
         }
 
-    def record(self, step: int, reactor: Reactor) -> None:
+    def record(
+        self,
+        step: int,
+        reactor: Reactor,
+        *,
+        state_changed: bool = True,
+        force: bool = False,
+    ) -> None:
         if self.verify_every and step % self.verify_every == 0:
             full = self.full_scan_a_total(reactor)
             if full != self.a_total:
@@ -46,6 +59,8 @@ class Observer:
                     "A_total mismatch at step "
                     f"{step}: incremental={self.a_total}, full={full}"
                 )
+        if not force and not self.record_unchanged and not state_changed:
+            return
         self.records.append(self.snapshot(step, reactor))
 
     def to_csv(self, path: Path) -> None:

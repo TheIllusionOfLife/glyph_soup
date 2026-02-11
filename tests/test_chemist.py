@@ -68,3 +68,43 @@ def test_break_probability_clamped_between_zero_and_one():
 
     assert 0.0 <= low <= 1.0
     assert 0.0 <= high <= 1.0
+
+
+def test_bond_step_preserves_sampled_order_in_asymmetric_mode():
+    cfg = SimulationConfig(initial_atoms=4, p_bond=1.0, max_steps=1, symmetric=False)
+    reactor = Reactor([Atom("A"), Atom("B"), Atom("C"), Atom("D")])
+    chemist = Chemist()
+    rng = random.Random(0)
+
+    reactor.sample_distinct = lambda k, r: (3, 1)  # type: ignore[method-assign]
+    event = chemist.bond_step(reactor, cfg, rng)
+
+    assert event is not None
+    assert event.kind == "bond"
+    assert event.added[0].flat == "(D,B)"
+
+
+def test_reaction_step_can_try_break_before_bond():
+    cfg = SimulationConfig(initial_atoms=3, p_bond=1.0, max_steps=1)
+    reactor = Reactor([Atom("A"), Atom("B"), Atom("C")])
+    chemist = Chemist()
+
+    calls: list[str] = []
+
+    def fake_break(*args, **kwargs):
+        calls.append("break")
+        return None
+
+    def fake_bond(*args, **kwargs):
+        calls.append("bond")
+        return None
+
+    chemist.break_step = fake_break  # type: ignore[method-assign]
+    chemist.bond_step = fake_bond  # type: ignore[method-assign]
+
+    class StubRng:
+        def random(self) -> float:
+            return 0.9  # choose break branch first
+
+    chemist.reaction_step(reactor, cfg, StubRng())  # type: ignore[arg-type]
+    assert calls == ["break", "bond"]

@@ -37,7 +37,7 @@ def run_experiment_a(
     chemist = Chemist()
     observer = Observer(verify_every=verify_every)
     observer.initialize(reactor)
-    observer.record(0, reactor)
+    observer.record(0, reactor, force=True)
 
     snapshot_set = set(snapshot_steps)
     snapshots: dict[str, dict[str, object]] = {}
@@ -47,7 +47,12 @@ def run_experiment_a(
         if event is not None:
             observer.apply_transition(list(event.removed), list(event.added))
 
-        observer.record(step, reactor)
+        observer.record(
+            step,
+            reactor,
+            state_changed=event is not None,
+            force=step in snapshot_set,
+        )
 
         if step in snapshot_set:
             snapshots[str(step)] = {

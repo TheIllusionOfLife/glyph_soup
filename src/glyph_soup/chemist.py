@@ -52,10 +52,11 @@ class Chemist:
 
         i, j = reactor.sample_distinct(2, rng)
         removed = reactor.remove_indices((i, j))
-        product = join(removed[0], removed[1], symmetric=cfg.symmetric)
+        idx_to_mol = dict(zip(sorted((i, j)), removed, strict=True))
+        product = join(idx_to_mol[i], idx_to_mol[j], symmetric=cfg.symmetric)
         reactor.add(product)
         reactor.step_count += 1
-        return ReactionEvent("bond", tuple(removed), (product,))
+        return ReactionEvent("bond", (idx_to_mol[i], idx_to_mol[j]), (product,))
 
     def break_step(
         self,
@@ -78,6 +79,9 @@ class Chemist:
             return None
 
         removed = reactor.remove_indices((idx,))
+        # Root-only break is currently intentional.
+        # Breaking internal bonds without orphaning subtrees requires a
+        # fragment-collecting break implementation that preserves mass.
         left, right = break_at(target, 0)
         reactor.add(left)
         reactor.add(right)
@@ -90,7 +94,13 @@ class Chemist:
         cfg: SimulationConfig,
         rng: random.Random,
     ) -> ReactionEvent | None:
-        event = self.bond_step(reactor, cfg, rng)
+        if rng.random() < 0.5:
+            event = self.bond_step(reactor, cfg, rng)
+            if event is not None:
+                return event
+            return self.break_step(reactor, cfg, rng)
+
+        event = self.break_step(reactor, cfg, rng)
         if event is not None:
             return event
-        return self.break_step(reactor, cfg, rng)
+        return self.bond_step(reactor, cfg, rng)

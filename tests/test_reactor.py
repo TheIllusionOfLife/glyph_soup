@@ -2,6 +2,8 @@
 
 import random
 
+import pytest
+
 from glyph_soup.molecule import Atom, join
 from glyph_soup.reactor import Reactor
 
@@ -33,3 +35,16 @@ def test_mass_conserved_helper():
     reactor = Reactor([ab, Atom("C")])
     assert reactor.mass_conserved(initial_atoms=3)
     assert not reactor.mass_conserved(initial_atoms=4)
+
+
+def test_remove_indices_is_atomic_on_invalid_input():
+    reactor = Reactor([Atom("A"), Atom("B"), Atom("C")])
+    before = list(reactor.tank)
+    with pytest.raises(IndexError):
+        reactor.remove_indices((1, -1))
+    assert reactor.tank == before
+
+
+def test_from_random_atoms_rejects_empty_alphabet():
+    with pytest.raises(ValueError, match="alphabet must be non-empty"):
+        Reactor.from_random_atoms(3, "", random.Random(0))

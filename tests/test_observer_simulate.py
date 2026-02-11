@@ -11,12 +11,13 @@ from glyph_soup.simulate import run_experiment_a
 
 def test_observer_incremental_matches_full_scan():
     ab = join(Atom("A"), Atom("B"))
-    reactor = Reactor([ab, Atom("C")])
+    c = Atom("C")
+    reactor = Reactor([ab, c])
     observer = Observer()
     observer.initialize(reactor)
 
-    root = join(ab, Atom("C"))
-    observer.apply_transition(removed=[ab, Atom("C")], added=[root])
+    root = join(ab, c)
+    observer.apply_transition(removed=[ab, c], added=[root])
     reactor.tank = [root]
 
     assert observer.a_total == observer.full_scan_a_total(reactor)
