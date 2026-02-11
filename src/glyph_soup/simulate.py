@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from glyph_soup.assembly import exact_ma
 from glyph_soup.chemist import Chemist
@@ -74,3 +74,22 @@ def run_experiment_a(
         final_ma_histogram=histogram,
         observer=observer,
     )
+
+
+def run_experiment_a_batch(
+    cfg: SimulationConfig,
+    *,
+    seed_ids: tuple[int, ...] | list[int] | range,
+    snapshot_steps: tuple[int, ...] = (),
+    verify_every: int | None = None,
+) -> dict[int, SimulationRunResult]:
+    """Run Experiment A for multiple seeds with shared config."""
+    results: dict[int, SimulationRunResult] = {}
+    for seed_id in seed_ids:
+        run_cfg = replace(cfg, seed_id=seed_id)
+        results[seed_id] = run_experiment_a(
+            run_cfg,
+            snapshot_steps=snapshot_steps,
+            verify_every=verify_every,
+        )
+    return results
