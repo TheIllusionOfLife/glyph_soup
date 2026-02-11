@@ -45,10 +45,18 @@ def analyze_exp_a_summaries(
     summary_paths = sorted(input_dir.glob("seed_*/summary_seed_*.json"))
     if not summary_paths:
         summary_paths = sorted(input_dir.glob("summary_seed_*.json"))
+    if not summary_paths:
+        raise FileNotFoundError(f"No summary_seed_*.json found under {input_dir}")
 
     rows: list[dict[str, object]] = []
     for path in summary_paths:
-        rows.append(json.loads(path.read_text(encoding="utf-8")))
+        row = json.loads(path.read_text(encoding="utf-8"))
+        assert isinstance(row, dict)
+        required_keys = {"seed_id", "final_a_total", "final_molecule_count"}
+        missing = required_keys - row.keys()
+        if missing:
+            raise ValueError(f"{path} missing required keys: {sorted(missing)}")
+        rows.append(row)
 
     seed_ids = sorted(int(row["seed_id"]) for row in rows)
     a_totals = [int(row.get("final_a_total", 0)) for row in rows]

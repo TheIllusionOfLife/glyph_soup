@@ -9,7 +9,11 @@ from pathlib import Path
 
 from glyph_soup.config import SimulationConfig
 from glyph_soup.experiments.analyze_exp_a import analyze_exp_a_summaries
-from glyph_soup.simulate import run_experiment_a, run_experiment_a_batch
+from glyph_soup.simulate import (
+    SimulationRunResult,
+    run_experiment_a,
+    run_experiment_a_batch,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,7 +30,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _write_run_outputs(result, out_dir: Path) -> None:
+def _write_run_outputs(result: SimulationRunResult, out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     trace_path = out_dir / f"trace_seed_{result.seed_id}.csv"
     result.observer.to_csv(trace_path)

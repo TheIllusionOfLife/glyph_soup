@@ -251,6 +251,17 @@ class TestBreakFragmentsAt:
         assert sorted(m.flat for m in frags) == ["(C,D)", "A", "B"]
         assert sum(m.leaves_count for m in frags) == abcd.leaves_count
 
+    def test_break_fragments_at_atom_raises(self):
+        with pytest.raises((ValueError, TypeError)):
+            break_fragments_at(Atom("A"), 0)
+
+    def test_break_fragments_out_of_range_raises(self):
+        ab = join(Atom("A"), Atom("B"))
+        with pytest.raises((ValueError, IndexError)):
+            break_fragments_at(ab, -1)
+        with pytest.raises((ValueError, IndexError)):
+            break_fragments_at(ab, 1)
+
 
 # ---------- all_subtrees / subtree_counts ----------
 
