@@ -3,7 +3,7 @@
 import random
 
 from glyph_soup.chemist import Chemist
-from glyph_soup.config import BreakFunction, SimulationConfig
+from glyph_soup.config import BreakFunction, CatalysisConfig, SimulationConfig
 from glyph_soup.molecule import Atom, join
 from glyph_soup.reactor import Reactor
 
@@ -139,3 +139,33 @@ def test_break_step_can_break_non_root_and_preserve_mass():
     assert event.kind == "break"
     assert sorted(m.flat for m in event.added) == ["A", "B", "C"]
     assert reactor.total_atoms() == 3
+
+
+def test_catalyst_is_not_consumed_when_match_boosts_bond():
+    cfg = SimulationConfig(
+        initial_atoms=3,
+        p_bond=0.3,
+        max_steps=1,
+        catalysis=CatalysisConfig(enabled=True, mode="substring", boost=10.0),
+    )
+    reactor = Reactor([Atom("A"), Atom("B"), Atom("A")])
+    chemist = Chemist()
+
+    class StubRng:
+        def random(self) -> float:
+            return 0.0
+
+        def sample(self, population, k):
+            assert k == 2
+            return [0, 1]
+
+        def choice(self, values):
+            return values[0]
+
+    event = chemist.bond_step(reactor, cfg, StubRng())  # type: ignore[arg-type]
+
+    assert event is not None
+    assert event.kind == "bond"
+    # 3 molecules -> 2 substrates consumed + 1 product + catalyst retained = 2
+    assert len(reactor.tank) == 2
+    assert any(m.flat == "A" for m in reactor.tank)
