@@ -8,6 +8,10 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Literal, get_args
+
+CatalysisMode = Literal["substring", "subtree", "random_table"]
+CATALYSIS_MODES: tuple[CatalysisMode, ...] = get_args(CatalysisMode)
 
 
 @dataclass(frozen=True)
@@ -32,6 +36,30 @@ class BreakFunction:
 
 
 @dataclass(frozen=True)
+class CatalysisConfig:
+    """Catalysis parameters for Experiment B (spec §6.3)."""
+
+    enabled: bool = False
+    mode: CatalysisMode = "substring"
+    boost: float = 2.0
+    random_table_match_prob: float = 0.1
+
+    def __post_init__(self) -> None:
+        valid_modes = set(CATALYSIS_MODES)
+        if self.mode not in valid_modes:
+            raise ValueError(
+                f"Invalid mode '{self.mode}', must be one of {valid_modes}"
+            )
+        if self.boost <= 0.0:
+            raise ValueError(f"boost must be > 0, got {self.boost}")
+        if not (0.0 <= self.random_table_match_prob <= 1.0):
+            raise ValueError(
+                "random_table_match_prob must be in [0, 1], got "
+                f"{self.random_table_match_prob}"
+            )
+
+
+@dataclass(frozen=True)
 class SimulationConfig:
     """Complete simulation configuration (spec §3, §6).
 
@@ -45,6 +73,7 @@ class SimulationConfig:
     n_seeds: int = 100
     p_bond: float = 0.5
     break_function: BreakFunction = field(default_factory=BreakFunction)
+    catalysis: CatalysisConfig = field(default_factory=CatalysisConfig)
     symmetric: bool = False
     seed_id: int = 0
 
@@ -82,6 +111,8 @@ class SimulationConfig:
         data = json.loads(json_str)
         if "break_function" in data and isinstance(data["break_function"], dict):
             data["break_function"] = BreakFunction(**data["break_function"])
+        if "catalysis" in data and isinstance(data["catalysis"], dict):
+            data["catalysis"] = CatalysisConfig(**data["catalysis"])
         # Remove derived fields that aren't constructor params
         data.pop("alphabet_size", None)
         return cls(**data)

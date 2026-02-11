@@ -23,7 +23,9 @@ src/glyph_soup/
   simulate.py
   experiments/
     exp_a.py
+    exp_b.py
     analyze_exp_a.py
+    analyze_exp_b.py
     transition_detection.py
 
 tests/

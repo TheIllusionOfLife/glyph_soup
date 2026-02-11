@@ -2,11 +2,16 @@
 
 from pathlib import Path
 
-from glyph_soup.config import BreakFunction, SimulationConfig
+from glyph_soup.config import BreakFunction, CatalysisConfig, SimulationConfig
 from glyph_soup.molecule import Atom, join
 from glyph_soup.observer import Observer
 from glyph_soup.reactor import Reactor
-from glyph_soup.simulate import run_experiment_a, run_experiment_a_batch
+from glyph_soup.simulate import (
+    run_experiment_a,
+    run_experiment_a_batch,
+    run_experiment_b,
+    run_experiment_b_batch,
+)
 
 
 def test_observer_incremental_matches_full_scan():
@@ -63,3 +68,27 @@ def test_run_experiment_a_batch_runs_multiple_seeds():
     assert [seed_id for seed_id, _ in batch] == [0, 1, 2]
     assert batch[0][1].seed_id == 0
     assert batch[1][1].seed_id == 1
+
+
+def test_run_experiment_b_is_deterministic_for_fixed_seed():
+    cfg = SimulationConfig(
+        seed_id=3,
+        initial_atoms=20,
+        max_steps=80,
+        catalysis=CatalysisConfig(enabled=True, mode="substring"),
+    )
+    r1 = run_experiment_b(cfg)
+    r2 = run_experiment_b(cfg)
+
+    assert r1.records == r2.records
+    assert r1.final_sorted_molecules == r2.final_sorted_molecules
+
+
+def test_run_experiment_b_batch_runs_multiple_seeds():
+    cfg = SimulationConfig(
+        initial_atoms=20,
+        max_steps=20,
+        catalysis=CatalysisConfig(enabled=True, mode="subtree"),
+    )
+    batch = list(run_experiment_b_batch(cfg, seed_ids=(0, 1)))
+    assert [seed_id for seed_id, _ in batch] == [0, 1]

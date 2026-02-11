@@ -51,6 +51,17 @@ uv run python -m glyph_soup.experiments.exp_a \
   --output-dir outputs/exp_a
 ```
 
+### Run Experiment B (batch, all catalysis modes)
+
+```bash
+uv run python -m glyph_soup.experiments.exp_b \
+  --steps 100000 \
+  --initial-atoms 1000 \
+  --seed-start 0 \
+  --seed-end 99 \
+  --output-dir outputs/exp_b
+```
+
 ## Output contract
 
 Single-seed mode writes:
@@ -66,12 +77,21 @@ Batch mode writes:
 - `outputs/exp_a/analysis/batch_summary.json`
 - `outputs/exp_a/analysis/calibration.json`
 
+Experiment B batch mode writes:
+
+- `outputs/exp_b/{mode}/seed_{seed}/trace_seed_{seed}.csv`
+- `outputs/exp_b/{mode}/seed_{seed}/summary_seed_{seed}.json`
+- `outputs/exp_b/{mode}/params/seed_{seed}.json`
+- `outputs/exp_b/{mode}/analysis/batch_summary.json`
+- `outputs/exp_b/analysis/mode_comparison.json`
+
 ## Architecture
 
 - `src/glyph_soup/reactor.py`: molecule tank, sampling, mass accounting
 - `src/glyph_soup/chemist.py`: stochastic bond/break reaction logic
 - `src/glyph_soup/observer.py`: incremental `a_total` updates and CSV trace records
 - `src/glyph_soup/assembly.py`: exact and optimized MA-related computation
+- `src/glyph_soup/catalysis.py`: Experiment B catalysis matching strategies
 - `src/glyph_soup/experiments/`: CLI runners and analysis tools
 
 ## Documentation map

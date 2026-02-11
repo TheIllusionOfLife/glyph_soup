@@ -15,6 +15,7 @@ uv run ruff check .
 uv run ruff format --check .
 uv run python -m glyph_soup.experiments.exp_a --seed 0 --steps 1000 --initial-atoms 100
 uv run python -m glyph_soup.experiments.exp_a --seed-start 0 --seed-end 9 --steps 1000 --initial-atoms 100
+uv run python -m glyph_soup.experiments.exp_b --seed-start 0 --seed-end 9 --steps 1000 --initial-atoms 100
 ```
 
 ## Code style and architecture rules

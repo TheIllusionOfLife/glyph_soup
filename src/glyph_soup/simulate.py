@@ -33,6 +33,33 @@ def run_experiment_a(
     verify_every: int | None = None,
 ) -> SimulationRunResult:
     """Run baseline random bonding/breaking simulation (Experiment A)."""
+    return _run_experiment(
+        cfg,
+        snapshot_steps=snapshot_steps,
+        verify_every=verify_every,
+    )
+
+
+def run_experiment_b(
+    cfg: SimulationConfig,
+    *,
+    snapshot_steps: tuple[int, ...] = (),
+    verify_every: int | None = None,
+) -> SimulationRunResult:
+    """Run catalysis-enabled simulation (Experiment B)."""
+    return _run_experiment(
+        cfg,
+        snapshot_steps=snapshot_steps,
+        verify_every=verify_every,
+    )
+
+
+def _run_experiment(
+    cfg: SimulationConfig,
+    *,
+    snapshot_steps: tuple[int, ...],
+    verify_every: int | None,
+) -> SimulationRunResult:
     rng = random.Random(cfg.seed_id)
     reactor = Reactor.from_random_atoms(cfg.initial_atoms, cfg.alphabet, rng)
     chemist = Chemist()
@@ -88,6 +115,24 @@ def run_experiment_a_batch(
     for seed_id in seed_ids:
         run_cfg = replace(cfg, seed_id=seed_id)
         result = run_experiment_a(
+            run_cfg,
+            snapshot_steps=snapshot_steps,
+            verify_every=verify_every,
+        )
+        yield seed_id, result
+
+
+def run_experiment_b_batch(
+    cfg: SimulationConfig,
+    *,
+    seed_ids: tuple[int, ...] | list[int] | range,
+    snapshot_steps: tuple[int, ...] = (),
+    verify_every: int | None = None,
+) -> Iterator[tuple[int, SimulationRunResult]]:
+    """Yield Experiment B results for multiple seeds with shared config."""
+    for seed_id in seed_ids:
+        run_cfg = replace(cfg, seed_id=seed_id)
+        result = run_experiment_b(
             run_cfg,
             snapshot_steps=snapshot_steps,
             verify_every=verify_every,
