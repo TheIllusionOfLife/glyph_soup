@@ -84,8 +84,7 @@ def analyze_exp_a_summaries(
 
         trace_path = path.parent / f"trace_seed_{seed_id}.csv"
         if trace_path.exists():
-            a_series = _read_a_total_series(trace_path)
-            stable_values = _stable_window_values(
+            a_series, stable_values = _read_trace_a_series_and_stable_window(
                 trace_path,
                 stable_start=stable_start,
                 stable_end=stable_end,
@@ -100,15 +99,16 @@ def analyze_exp_a_summaries(
         elif require_traces:
             raise FileNotFoundError(str(trace_path))
 
+    a_total_p99 = _percentile(a_totals, 0.99)
     payload: dict[str, object] = {
         "seed_count": len(seed_ids),
         "seed_ids": sorted(seed_ids),
         "a_total": _summarize(a_totals),
         "final_molecule_count": _summarize(molecule_counts),
-        "a_total_p99": _percentile(a_totals, 0.99),
+        "a_total_p99": a_total_p99,
         "calibration": {
             "thresholds": {
-                "a_total_p99": _percentile(a_totals, 0.99),
+                "a_total_p99": a_total_p99,
                 "max_ma_p99": _percentile(max_mas, 0.99),
                 "transition_window": transition_window,
                 "transition_k": transition_k,
@@ -125,29 +125,24 @@ def analyze_exp_a_summaries(
     return payload
 
 
-def _read_a_total_series(trace_path: Path) -> list[int]:
-    with trace_path.open("r", encoding="utf-8", newline="") as f:
-        rows = list(csv.DictReader(f))
-    return [int(row["a_total"]) for row in rows]
-
-
-def _stable_window_values(
+def _read_trace_a_series_and_stable_window(
     trace_path: Path,
     *,
     stable_start: int,
     stable_end: int,
-) -> list[int]:
+) -> tuple[list[int], list[int]]:
     if stable_end < stable_start:
         raise ValueError(
             f"stable_end must be >= stable_start, got {stable_end} < {stable_start}"
         )
+    a_series: list[int] = []
+    stable_values: list[int] = []
     with trace_path.open("r", encoding="utf-8", newline="") as f:
-        rows = list(csv.DictReader(f))
-    values = [
-        int(row["a_total"])
-        for row in rows
-        if stable_start <= int(row["step"]) <= stable_end
-    ]
-    if values:
-        return values
-    return [int(row["a_total"]) for row in rows]
+        reader = csv.DictReader(f)
+        for row in reader:
+            val = int(row["a_total"])
+            step = int(row["step"])
+            a_series.append(val)
+            if stable_start <= step <= stable_end:
+                stable_values.append(val)
+    return a_series, stable_values

@@ -50,9 +50,10 @@ def detect_transition_acceleration(
             if run == 1:
                 start_idx = i
             if run >= k:
+                # accel[i] corresponds to series index i + window + 1.
                 return {
                     "detected": True,
-                    "transition_index": start_idx,
+                    "transition_index": start_idx + window + 1,
                     "theta": theta,
                     "k": k,
                     "window": window,
