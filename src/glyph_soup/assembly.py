@@ -549,10 +549,9 @@ def _estimate_random_ma_ceiling(
             k = rng.choice(compounds)
             mol = tank[k]
             assert isinstance(mol, Compound)
-            # Pick random internal node to break at
-            n_internal = mol.internal_nodes_count
-            pos = rng.randrange(n_internal)
-            left, right = break_at(mol, pos)
+            # Break at root (position 0) to preserve mass conservation
+            # Breaking at non-root positions would orphan parts of the tree
+            left, right = break_at(mol, 0)
             tank[k] = tank[-1]
             tank.pop()
             tank.append(left)

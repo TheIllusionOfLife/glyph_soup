@@ -7,6 +7,7 @@ String representation is for display/hashing only (spec §2).
 from __future__ import annotations
 
 from collections.abc import Iterator
+from itertools import combinations_with_replacement
 
 
 class Molecule:
@@ -237,9 +238,21 @@ def enumerate_n_leaves(n: int, alphabet: str, *, symmetric: bool) -> Iterator[Mo
         right_n = n - split
         if symmetric and left_n > right_n:
             continue  # avoid generating (right, left) duplicates
-        for left in enumerate_n_leaves(left_n, alphabet, symmetric=symmetric):
-            for right in enumerate_n_leaves(right_n, alphabet, symmetric=symmetric):
-                mol = join(left, right, symmetric=symmetric)
+
+        if symmetric and left_n == right_n:
+            # Use combinations_with_replacement to avoid redundant pairs
+            # when both subtrees have the same size
+            submols = list(enumerate_n_leaves(left_n, alphabet, symmetric=True))
+            for left, right in combinations_with_replacement(submols, 2):
+                mol = join(left, right, symmetric=True)
                 if mol not in seen:
                     seen.add(mol)
                     yield mol
+        else:
+            # Different sizes or asymmetric mode: generate all pairs
+            for left in enumerate_n_leaves(left_n, alphabet, symmetric=symmetric):
+                for right in enumerate_n_leaves(right_n, alphabet, symmetric=symmetric):
+                    mol = join(left, right, symmetric=symmetric)
+                    if mol not in seen:
+                        seen.add(mol)
+                        yield mol
