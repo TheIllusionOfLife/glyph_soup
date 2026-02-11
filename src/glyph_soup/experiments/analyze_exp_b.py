@@ -5,9 +5,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from glyph_soup.config import CATALYSIS_MODES
 from glyph_soup.experiments.analyze_exp_a import analyze_exp_a_summaries
 
-MODES = ("substring", "subtree", "random_table")
+MODES = CATALYSIS_MODES
 
 
 def analyze_exp_b_outputs(

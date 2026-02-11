@@ -8,8 +8,8 @@ import sys
 from dataclasses import replace
 from pathlib import Path
 
-from glyph_soup.config import CatalysisConfig, SimulationConfig
-from glyph_soup.experiments.analyze_exp_b import MODES, analyze_exp_b_outputs
+from glyph_soup.config import CATALYSIS_MODES, CatalysisConfig, SimulationConfig
+from glyph_soup.experiments.analyze_exp_b import analyze_exp_b_outputs
 from glyph_soup.simulate import (
     SimulationRunResult,
     run_experiment_b,
@@ -19,7 +19,7 @@ from glyph_soup.simulate import (
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run Glyph Soup Experiment B")
-    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--steps", type=int, default=100_000)
     parser.add_argument("--initial-atoms", type=int, default=1000)
     parser.add_argument("--alphabet", type=str, default="ABCD")
@@ -51,8 +51,9 @@ def _write_run_outputs(result: SimulationRunResult, out_dir: Path) -> None:
 
 def main() -> None:
     args = parse_args()
+    effective_seed = 0 if args.seed is None else args.seed
     cfg = SimulationConfig(
-        seed_id=args.seed,
+        seed_id=effective_seed,
         max_steps=args.steps,
         initial_atoms=args.initial_atoms,
         alphabet=args.alphabet,
@@ -68,16 +69,16 @@ def main() -> None:
             raise ValueError("--seed-start and --seed-end must be provided together")
         if args.seed_end < args.seed_start:
             raise ValueError("--seed-end must be >= --seed-start")
-        if args.seed != 0:
+        if args.seed is not None:
             print(
                 "--seed is ignored in batch mode when seed range is provided",
                 file=sys.stderr,
             )
         seed_ids = range(args.seed_start, args.seed_end + 1)
     else:
-        seed_ids = range(args.seed, args.seed + 1)
+        seed_ids = range(effective_seed, effective_seed + 1)
 
-    for mode in MODES:
+    for mode in CATALYSIS_MODES:
         mode_cfg = replace(
             cfg,
             catalysis=CatalysisConfig(

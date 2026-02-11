@@ -63,3 +63,29 @@ def test_exp_b_cli_warns_seed_ignored_in_batch_mode(tmp_path):
     result = subprocess.run(cmd, check=True, capture_output=True, text=True)
     assert result.returncode == 0
     assert "--seed is ignored in batch mode" in result.stderr
+
+
+def test_exp_b_cli_warns_when_explicit_seed_zero_in_batch_mode(tmp_path):
+    out_dir = tmp_path / "out"
+    cmd = [
+        "uv",
+        "run",
+        "python",
+        "-m",
+        "glyph_soup.experiments.exp_b",
+        "--seed",
+        "0",
+        "--steps",
+        "10",
+        "--initial-atoms",
+        "12",
+        "--seed-start",
+        "0",
+        "--seed-end",
+        "0",
+        "--output-dir",
+        str(out_dir),
+    ]
+    result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+    assert result.returncode == 0
+    assert "--seed is ignored in batch mode" in result.stderr

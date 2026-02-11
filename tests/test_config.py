@@ -4,7 +4,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from glyph_soup.config import BreakFunction, SimulationConfig
+from glyph_soup.config import CATALYSIS_MODES, BreakFunction, SimulationConfig
 
 
 class TestBreakFunction:
@@ -89,3 +89,7 @@ class TestSimulationConfig:
     def test_alphabet_size_derived(self):
         cfg = SimulationConfig(alphabet="ABCDEFGH")
         assert cfg.alphabet_size == 8
+
+
+def test_catalysis_modes_single_source_of_truth():
+    assert CATALYSIS_MODES == ("substring", "subtree", "random_table")

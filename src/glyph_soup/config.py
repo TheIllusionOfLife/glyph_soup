@@ -8,9 +8,10 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Literal, get_args
 
-type CatalysisMode = Literal["substring", "subtree", "random_table"]
+CatalysisMode = Literal["substring", "subtree", "random_table"]
+CATALYSIS_MODES: tuple[CatalysisMode, ...] = get_args(CatalysisMode)
 
 
 @dataclass(frozen=True)
@@ -44,7 +45,7 @@ class CatalysisConfig:
     random_table_match_prob: float = 0.1
 
     def __post_init__(self) -> None:
-        valid_modes = {"substring", "subtree", "random_table"}
+        valid_modes = set(CATALYSIS_MODES)
         if self.mode not in valid_modes:
             raise ValueError(
                 f"Invalid mode '{self.mode}', must be one of {valid_modes}"
