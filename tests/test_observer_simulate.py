@@ -5,8 +5,8 @@ from pathlib import Path
 from glyph_soup.config import BreakFunction, SimulationConfig
 from glyph_soup.molecule import Atom, join
 from glyph_soup.observer import Observer
-from glyph_soup.simulate import run_experiment_a
 from glyph_soup.reactor import Reactor
+from glyph_soup.simulate import run_experiment_a
 
 
 def test_observer_incremental_matches_full_scan():
