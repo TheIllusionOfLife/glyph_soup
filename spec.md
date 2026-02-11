@@ -2,9 +2,9 @@
 
 > **Document Role:** Implementation Specification (authoritative)
 > **Based on:**
-> - [`research_plan.md`](research_plan.md) — 初期研究計画（構想・RQ・実験シナリオの原案）
-> - [`review_unified.md`](review_unified.md) — 統一レビュー（計画の問題点と推奨アクション）
-> - [`生命の起源とアセンブリ理論レポート.md`](生命の起源とアセンブリ理論レポート.md) — アセンブリ理論の参照資料
+> - [`docs/research/research_plan.md`](docs/research/research_plan.md) — 初期研究計画（構想・RQ・実験シナリオの原案）
+> - [`docs/reviews/review_unified.md`](docs/reviews/review_unified.md) — 統一レビュー（計画の問題点と推奨アクション）
+> - [`docs/reference/assembly_theory_report_ja.md`](docs/reference/assembly_theory_report_ja.md) — アセンブリ理論の参照資料
 > - 研究者インタビュー — パラメータ選択・スコープ・設計判断の確定
 >
 > **This is the document to follow for implementation.** The research plan and review are retained for context and audit trail.
@@ -342,34 +342,13 @@ X + Y + C → Join(X, Y) + C    確率: P_bond × boost(C, X, Y)
 
 ## 11. プロジェクト構成（モノレポ）
 
-```
-glyph_soup/
-├── research_plan.md          # 研究計画書（原本）
-├── review_unified.md         # 統一レビュー
-├── spec.md                   # 本仕様書
-├── src/
-│   ├── glyph_soup/
-│   │   ├── __init__.py
-│   │   ├── molecule.py       # 二分木データ構造
-│   │   ├── assembly.py       # MA計算アルゴリズム
-│   │   ├── reactor.py        # Reactor（タンク管理）
-│   │   ├── chemist.py        # Chemist（反応ルール）
-│   │   ├── observer.py       # Observer（指標計算・CSV出力）
-│   │   └── config.py         # パラメータ管理
-│   └── rust_core/            # [将来] Rust高速化モジュール
-├── experiments/
-│   ├── exp_a/                # 実験A: ベースライン
-│   ├── exp_b/                # 実験B: 触媒
-│   └── exp_c/                # 実験C: アブレーション
-├── notebooks/
-│   ├── analysis_a.ipynb      # 実験A分析
-│   ├── analysis_b.ipynb      # 実験B分析
-│   └── analysis_c.ipynb      # 実験C分析
-├── game/                     # [将来] ゲームエンジンプロジェクト
-├── tests/
-├── pyproject.toml
-└── README.md
-```
+リポジトリ構成の詳細は `STRUCTURE.md` を正本とする。`spec.md` では構成の責務のみ定義する。
+
+- 実装コード: `src/glyph_soup/`
+- 実験エントリと分析: `src/glyph_soup/experiments/`
+- テストと回帰フィクスチャ: `tests/` と `tests/golden_traces/`
+- 研究・レビュー・参照資料: `docs/`
+- プロジェクト運用ドキュメント: `README.md`, `AGENTS.md`, `PRODUCT.md`, `TECH.md`, `STRUCTURE.md`
 
 ---
 
@@ -385,7 +364,7 @@ glyph_soup/
 
 ## 13. RQ3（AI探索）の扱い **[DEFERRED]**
 
-`research_plan.md` のRQ3「AIは高MA物質を生成する化学反応ルールを発見できるか」は、実験A・B・Cの完了後に設計する。
+`docs/research/research_plan.md` のRQ3「AIは高MA物質を生成する化学反応ルールを発見できるか」は、実験A・B・Cの完了後に設計する。
 
 - 現スコープ（Phase 1-5）はRQ1・RQ2の検証に集中する
 - RQ3の実験設計はPhase 5の結果を踏まえて別途仕様化する
@@ -410,13 +389,13 @@ glyph_soup/
 
 ### 14.3 パラメータ記録
 
-- 各実験ランの全パラメータを JSON ファイルとして `experiments/exp_X/params/seed_{id}.json` に保存する
+- 各実験ランの全パラメータを JSON ファイルとして `outputs/exp_a/params/seed_{id}.json` に保存する
 - パラメータには $P_{bond}$, $P_{break}$ 関数種別と係数, 触媒方式, 対称性モード, seed_id を含む
 
 ### 14.4 実行環境
 
 - Pythonバージョンと依存パッケージは `uv.lock` で固定する
-- 実験実行コマンドをMakefileまたはスクリプトとして `experiments/run_exp_X.sh` に記録する
+- 実験実行コマンドを `README.md` と `AGENTS.md` に記録し、`uv` ベースの実行手順を維持する
 - CPU並列実行する場合は、各seedを独立プロセスとし、プロセス間で乱数状態を共有しない
 
 ### 14.5 ゴールデントレース回帰テスト

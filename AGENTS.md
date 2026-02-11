@@ -1,46 +1,51 @@
-# Repository Guidelines
+# AGENTS
 
-## Project Structure & Module Organization
-`src/glyph_soup/` contains the production package. Core simulation modules include `reactor.py`, `chemist.py`, `molecule.py`, `observer.py`, and experiment entrypoints under `src/glyph_soup/experiments/`.
+Repository-specific instructions for coding agents working in Glyph Soup.
 
-`tests/` mirrors runtime behavior with focused unit and integration tests (for example, `tests/test_reactor.py`, `tests/test_cli_exp_a.py`). Golden outputs for deterministic checks live in `tests/golden_traces/`.
+## High-signal commands
 
-Top-level docs (`spec.md`, `research_plan.md`) describe goals and experiment context; keep implementation decisions aligned with them.
+Use `uv` for all Python execution.
 
-## Build, Test, and Development Commands
-Use `uv` for environment and command execution.
+```bash
+uv sync --dev
+uv run pytest
+uv run pytest -m "not slow"
+uv run pytest -m slow
+uv run ruff check .
+uv run ruff format --check .
+uv run python -m glyph_soup.experiments.exp_a --seed 0 --steps 1000 --initial-atoms 100
+uv run python -m glyph_soup.experiments.exp_a --seed-start 0 --seed-end 9 --steps 1000 --initial-atoms 100
+```
 
-- `uv sync --dev` installs runtime and dev dependencies.
-- `uv run pytest` runs the full test suite.
-- `uv run pytest -m "not slow"` skips slow tests during quick iteration.
-- `uv run ruff check .` runs lint checks.
-- `uv run ruff format .` applies formatting.
+## Code style and architecture rules
 
-Run lint and tests before opening a PR.
+- Molecules are binary trees (`Atom`, `Compound`), not free-form strings.
+- `STRUCTURE.md` is the single source of truth for module boundaries and layout rules.
+- Maintain deterministic behavior for seeded runs; avoid accidental RNG call-order drift.
+- Keep code compatible with Ruff settings in `pyproject.toml`.
 
-## Coding Style & Naming Conventions
-Python 3.12+ codebase, 4-space indentation, and 88-character line length (Ruff enforced). Keep modules cohesive and small.
+## Testing instructions
 
-Naming:
-- Modules/functions/variables: `snake_case`
-- Classes: `PascalCase`
-- Constants: `UPPER_SNAKE_CASE`
-- Test files: `test_*.py`
+- Default full test run: `uv run pytest`
+- Fast local loop: `uv run pytest -m "not slow"`
+- Golden trace check lives in `tests/test_golden_trace.py` and is marked `slow`.
+- For behavior changes in simulation logic, add or update tests first.
 
-Prefer explicit types and pure functions for simulation logic where possible.
+## Repository etiquette
 
-## Testing Guidelines
-Pytest is the test framework (`[tool.pytest.ini_options]` in `pyproject.toml`). Add tests first for behavioral changes, then implement.
+- Branch naming: `<type>/<short-description>` (e.g., `fix/mass-accounting`).
+- Conventional commits preferred: `feat(scope): ...`, `fix(scope): ...`, `test(scope): ...`, `chore(scope): ...`.
+- Do not push directly to `main`.
+- Include test/lint evidence in PR descriptions.
 
-Use descriptive test names that encode behavior, e.g., `test_internal_break_preserves_mass`. Mark expensive scenarios with `@pytest.mark.slow`.
+## Environment and tooling quirks
 
-When changing experiment output, update or extend golden trace fixtures in `tests/golden_traces/`.
+- No required env vars for local dev/test workflows.
+- CLI batch mode ignores `--seed` when `--seed-start/--seed-end` are provided; this is intentional and emits a warning.
+- Experiment outputs are written under `outputs/` by default and are gitignored.
 
-## Commit & Pull Request Guidelines
-Follow Conventional Commit style seen in history: `feat(scope): ...`, `fix(scope): ...`, `test(scope): ...`, `chore(scope): ...`.
+## Common gotchas
 
-Create a feature branch for every change. PRs should include:
-- Clear summary of behavior changes
-- Linked issue/review context
-- Test evidence (commands run and results)
-- Artifact diffs/screenshots only when output files or reports change
+- `Observer.record()` may skip unchanged steps unless `force=True` or `record_unchanged=True`.
+- Golden fixture updates should happen only when deterministic behavior intentionally changes.
+- Keep docs in sync with file moves; archived material lives under `docs/`.

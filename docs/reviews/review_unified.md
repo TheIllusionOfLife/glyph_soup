@@ -1,9 +1,9 @@
 # 統一レビュー：Glyph Soup 研究計画書
 
-> **Document Role:** Peer Review of [`research_plan.md`](research_plan.md)
-> **Input:** [`research_plan.md`](research_plan.md)（研究計画）+ [`生命の起源とアセンブリ理論レポート.md`](生命の起源とアセンブリ理論レポート.md)（アセンブリ理論の参照資料）
+> **Document Role:** Peer Review of [`research_plan.md`](../research/research_plan.md)
+> **Input:** [`research_plan.md`](../research/research_plan.md)（研究計画）+ [`assembly_theory_report_ja.md`](../reference/assembly_theory_report_ja.md)（アセンブリ理論の参照資料）
 > **Output:** 2件の独立レビューを統合した優先度付き問題リストと推奨アクション
-> **Next:** See [`spec.md`](spec.md) — this review's findings were addressed in the implementation specification.
+> **Next:** See [`spec.md`](../../spec.md) — this review's findings were addressed in the implementation specification.
 
 ---
 
@@ -11,11 +11,11 @@
 
 ### C1. 生命判定指標の定義が原論文と乖離している
 
-`research_plan.md:53-55` で $A = MA \times CN$ を**単一分子種**のスコアとして定義し、その急上昇を「生命発生」としている。しかし参照理論（`生命の起源とアセンブリ理論レポート.md:50`）のアセンブリ方程式は：
+`research_plan.md:53-55` で $A = MA \times CN$ を**単一分子種**のスコアとして定義し、その急上昇を「生命発生」としている。しかし参照理論（`assembly_theory_report_ja.md:50`）のアセンブリ方程式は：
 
 $$A_{total} = \sum_{i} (A_i \times N_i)$$
 
-これは**系全体**の集約指標である。現状の定義では「1種の中程度MAが増えただけ」で誤検出する。さらに、参照理論が強調する「ランダムな複雑さ（高$A$・低$N$）」と「組織化された複雑さ（中〜高$A$・極めて高$N$）」の区別（`生命の起源とアセンブリ理論レポート.md:184-186`）が計画書に欠落しており、偽陽性を排除できない。
+これは**系全体**の集約指標である。現状の定義では「1種の中程度MAが増えただけ」で誤検出する。さらに、参照理論が強調する「ランダムな複雑さ（高$A$・低$N$）」と「組織化された複雑さ（中〜高$A$・極めて高$N$）」の区別（`assembly_theory_report_ja.md:184-186`）が計画書に欠落しており、偽陽性を排除できない。
 
 **対処:** 3層の指標を設計する：
 - **個別指標**: 分子種ごとの $A_i \times N_i$（ヒートマップ用）
@@ -24,7 +24,7 @@ $$A_{total} = \sum_{i} (A_i \times N_i)$$
 
 ### C2. MA閾値の移植問題
 
-`research_plan.md:11` で「MA閾値超え＝生命兆候」としているが、参照理論の $A > 15$ は実分子の質量分析・NMRに基づく**経験的境界**である（`生命の起源とアセンブリ理論レポート.md:54-63`）。文字列人工化学のアルファベット数・結合規則は実分子と根本的に異なるため、この値をそのまま移植する妥当性がない。
+`research_plan.md:11` で「MA閾値超え＝生命兆候」としているが、参照理論の $A > 15$ は実分子の質量分析・NMRに基づく**経験的境界**である（`assembly_theory_report_ja.md:54-63`）。文字列人工化学のアルファベット数・結合規則は実分子と根本的に異なるため、この値をそのまま移植する妥当性がない。
 
 **対処:** $A > 15$ は参照値としてのみ扱い、Glyph Soup固有の閾値を以下の手順で実験的に再校正する：
 1. 実験Aのランダム条件でMA分布の上限を統計的に求める
@@ -33,7 +33,7 @@ $$A_{total} = \sum_{i} (A_i \times N_i)$$
 
 ### C3. MA計算アルゴリズムの未設計
 
-MA算出は**NP困難**に属する可能性がある（`生命の起源とアセンブリ理論レポート.md:176`）。計画書ではMAを「最短再帰ステップ数」とだけ定義しており：
+MA算出は**NP困難**に属する可能性がある（`assembly_theory_report_ja.md:176`）。計画書ではMAを「最短再帰ステップ数」とだけ定義しており：
 - 具体的アルゴリズム（動的計画法？モンテカルロ木探索？）が未定義
 - 計算量の見積もりがない
 - タンク内の全分子を毎フレーム計算するスケーラビリティが未検討
