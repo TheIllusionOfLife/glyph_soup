@@ -6,6 +6,7 @@ import math
 import random
 from dataclasses import dataclass
 
+from glyph_soup.catalysis import catalysis_matches
 from glyph_soup.config import BreakFunction, SimulationConfig
 from glyph_soup.molecule import Compound, Molecule, break_fragments_at, join
 from glyph_soup.reactor import Reactor
@@ -47,10 +48,35 @@ class Chemist:
     ) -> ReactionEvent | None:
         if len(reactor.tank) < 2:
             return None
-        if rng.random() >= cfg.p_bond:
-            return None
+        if cfg.catalysis.enabled and len(reactor.tank) >= 3:
+            i, j = reactor.sample_distinct(2, rng)
+            substrates = {i, j}
+            catalyst_pool = [
+                idx for idx in range(len(reactor.tank)) if idx not in substrates
+            ]
+            catalyst_idx = rng.choice(catalyst_pool)
 
-        i, j = reactor.sample_distinct(2, rng)
+            x = reactor.tank[i]
+            y = reactor.tank[j]
+            catalyst = reactor.tank[catalyst_idx]
+            matched = catalysis_matches(
+                cfg.catalysis.mode,
+                catalyst,
+                x,
+                y,
+                seed_id=cfg.seed_id,
+                match_prob=cfg.catalysis.random_table_match_prob,
+            )
+            p_bond = cfg.p_bond
+            if matched:
+                p_bond = min(1.0, cfg.p_bond * cfg.catalysis.boost)
+            if rng.random() >= p_bond:
+                return None
+        else:
+            if rng.random() >= cfg.p_bond:
+                return None
+            i, j = reactor.sample_distinct(2, rng)
+
         removed = reactor.remove_indices((i, j))
         idx_to_mol = dict(zip(sorted((i, j)), removed, strict=True))
         product = join(idx_to_mol[i], idx_to_mol[j], symmetric=cfg.symmetric)

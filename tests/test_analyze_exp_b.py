@@ -8,7 +8,6 @@ import pytest
 
 from glyph_soup.experiments.analyze_exp_b import analyze_exp_b_outputs
 
-
 MODES = ("substring", "subtree", "random_table")
 
 

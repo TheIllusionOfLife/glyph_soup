@@ -3,7 +3,6 @@
 import json
 import subprocess
 
-
 MODES = ("substring", "subtree", "random_table")
 
 
