@@ -53,7 +53,10 @@ def analyze_exp_a_summaries(
     molecule_counts: list[int] = []
     for path in summary_paths:
         row = json.loads(path.read_text(encoding="utf-8"))
-        assert isinstance(row, dict)
+        if not isinstance(row, dict):
+            raise TypeError(
+                f"{path} expected JSON object (dict), got {type(row).__name__}"
+            )
         required_keys = {"seed_id", "final_a_total", "final_molecule_count"}
         missing = required_keys - row.keys()
         if missing:
