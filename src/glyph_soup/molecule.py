@@ -171,7 +171,7 @@ def break_fragments_at(compound: Compound, position: int) -> tuple[Molecule, ...
             f"{compound.internal_nodes_count} internal node(s)"
         )
 
-    counter = [0]
+    counter = 0
     found, fragments = _break_fragments_pre_order(compound, position, counter)
     if not found:
         raise IndexError(
@@ -198,31 +198,33 @@ def _collect_pre_order(mol: Molecule, acc: list[Compound]) -> None:
 def _break_fragments_pre_order(
     mol: Molecule,
     target_position: int,
-    counter: list[int],
+    counter: int,
 ) -> tuple[bool, list[Molecule]]:
-    if isinstance(mol, Atom):
+    next_counter = counter
+
+    def walk(node: Molecule) -> tuple[bool, list[Molecule]]:
+        nonlocal next_counter
+        if isinstance(node, Atom):
+            return False, []
+
+        current = next_counter
+        next_counter += 1
+        if current == target_position:
+            return True, [node.left, node.right]
+
+        found_left, left_fragments = walk(node.left)
+        if found_left:
+            left_fragments.append(node.right)
+            return True, left_fragments
+
+        found_right, right_fragments = walk(node.right)
+        if found_right:
+            right_fragments.append(node.left)
+            return True, right_fragments
+
         return False, []
 
-    current = counter[0]
-    counter[0] += 1
-    if current == target_position:
-        return True, [mol.left, mol.right]
-
-    found_left, left_fragments = _break_fragments_pre_order(
-        mol.left, target_position, counter
-    )
-    if found_left:
-        left_fragments.append(mol.right)
-        return True, left_fragments
-
-    found_right, right_fragments = _break_fragments_pre_order(
-        mol.right, target_position, counter
-    )
-    if found_right:
-        right_fragments.append(mol.left)
-        return True, right_fragments
-
-    return False, []
+    return walk(mol)
 
 
 def canonicalize(mol: Molecule) -> Molecule:

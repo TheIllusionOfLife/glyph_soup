@@ -43,6 +43,7 @@ def test_analyze_exp_a_summaries_from_batch_outputs(tmp_path: Path):
     assert result["seed_count"] == 2
     assert result["seed_ids"] == [0, 1]
     assert result["a_total"]["p99"] == 20
+    assert result["a_total_p99"] == 20
     assert out_path.exists()
 
 

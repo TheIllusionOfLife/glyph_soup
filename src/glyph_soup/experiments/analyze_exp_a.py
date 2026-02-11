@@ -59,7 +59,7 @@ def analyze_exp_a_summaries(
         rows.append(row)
 
     seed_ids = sorted(int(row["seed_id"]) for row in rows)
-    a_totals = [int(row.get("final_a_total", 0)) for row in rows]
+    a_totals = [int(row["final_a_total"]) for row in rows]
     molecule_counts = [int(row["final_molecule_count"]) for row in rows]
 
     payload: dict[str, object] = {
@@ -67,7 +67,7 @@ def analyze_exp_a_summaries(
         "seed_ids": seed_ids,
         "a_total": _summarize(a_totals),
         "final_molecule_count": _summarize(molecule_counts),
-        "random_upper_bound_a_total_p99": _percentile(a_totals, 0.99),
+        "a_total_p99": _percentile(a_totals, 0.99),
     }
 
     if out_path is not None:

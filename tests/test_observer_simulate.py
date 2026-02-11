@@ -59,7 +59,7 @@ def test_observer_can_write_csv(tmp_path: Path):
 
 def test_run_experiment_a_batch_runs_multiple_seeds():
     cfg = SimulationConfig(initial_atoms=20, max_steps=40)
-    batch = run_experiment_a_batch(cfg, seed_ids=(0, 1, 2))
-    assert sorted(batch.keys()) == [0, 1, 2]
-    assert batch[0].seed_id == 0
-    assert batch[1].seed_id == 1
+    batch = list(run_experiment_a_batch(cfg, seed_ids=(0, 1, 2)))
+    assert [seed_id for seed_id, _ in batch] == [0, 1, 2]
+    assert batch[0][1].seed_id == 0
+    assert batch[1][1].seed_id == 1

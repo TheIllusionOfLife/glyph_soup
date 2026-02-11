@@ -79,8 +79,7 @@ def main() -> None:
             encoding="utf-8",
         )
 
-    results = run_experiment_a_batch(cfg, seed_ids=seed_ids)
-    for seed_id, result in results.items():
+    for seed_id, result in run_experiment_a_batch(cfg, seed_ids=seed_ids):
         _write_run_outputs(result, args.output_dir / f"seed_{seed_id}")
 
     analyze_exp_a_summaries(
