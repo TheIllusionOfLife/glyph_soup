@@ -14,7 +14,6 @@ from glyph_soup.molecule import (
     subtree_counts,
 )
 
-
 # ---------- Atom ----------
 
 
@@ -291,9 +290,7 @@ class TestEnumerateMolecules:
         # (single internal node), and 4×4 = 16 labelings.
         # The plan says 20 which might include 1-leaf molecules.
         # Let me just test 2-leaf alone:
-        mols = list(
-            enumerate_molecules(max_leaves=2, alphabet="ABCD", symmetric=False)
-        )
+        mols = list(enumerate_molecules(max_leaves=2, alphabet="ABCD", symmetric=False))
         # 1-leaf: 4, 2-leaf: 4×4 = 16, total = 20
         assert len(mols) == 20
         assert len(set(mols)) == 20  # all unique
@@ -303,16 +300,12 @@ class TestEnumerateMolecules:
         # 1-leaf: 4
         # 2-leaf: C(4,2) + 4 = 6 + 4 = 10 (combinations with replacement)
         # Total: 14
-        mols = list(
-            enumerate_molecules(max_leaves=2, alphabet="ABCD", symmetric=True)
-        )
+        mols = list(enumerate_molecules(max_leaves=2, alphabet="ABCD", symmetric=True))
         assert len(mols) == 14
         assert len(set(mols)) == 14  # all unique
 
     def test_all_unique(self):
-        mols = list(
-            enumerate_molecules(max_leaves=3, alphabet="ABCD", symmetric=False)
-        )
+        mols = list(enumerate_molecules(max_leaves=3, alphabet="ABCD", symmetric=False))
         assert len(mols) == len(set(mols))
 
     def test_molecules_have_correct_leaf_count(self):
