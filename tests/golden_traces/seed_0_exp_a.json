@@ -1,0 +1,38 @@
+{
+  "config": {
+    "seed_id": 0,
+    "initial_atoms": 50,
+    "max_steps": 10000,
+    "p_bond": 0.5,
+    "alphabet": "ABCD",
+    "symmetric": false
+  },
+  "snapshots": {
+    "100": {
+      "a_total": 41,
+      "sorted_molecules": [
+        "(((A,((((B,A),A),(D,A)),A)),(B,D)),(B,(D,A)))",
+        "(((D,D),(A,(B,B))),((B,(D,C)),C))",
+        "((C,(B,(((C,A),C),(C,A)))),(C,C))",
+        "((C,D),B)",
+        "(A,(((((A,D),(A,C)),(C,C)),((C,C),D)),((B,A),D)))",
+        "(D,((B,D),D))"
+      ]
+    },
+    "1000": {
+      "a_total": 45,
+      "sorted_molecules": [
+        "(((C,(B,(((C,A),C),(C,A)))),(B,(D,A))),(((((B,D),D),(D,(((D,D),(A,(B,B))),((B,(D,C)),C)))),((((B,A),D),A),(((C,C),D),(((A,D),(A,C)),(C,C))))),(((C,D),B),(C,C))))",
+        "((A,((((B,A),A),(D,A)),A)),(B,D))"
+      ]
+    },
+    "10000": {
+      "a_total": 45,
+      "sorted_molecules": [
+        "(((((C,((A,D),(A,C))),D),B),A),(((A,((C,C),((D,D),(A,(B,B))))),((((C,A),((C,A),C)),B),((C,C),((B,(D,A)),D)))),(((B,A),A),D)))",
+        "((((D,D),(C,C)),(D,A)),C)",
+        "(((B,(D,C)),B),((((B,A),D),A),((C,D),B)))"
+      ]
+    }
+  }
+}

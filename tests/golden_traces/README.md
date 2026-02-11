@@ -8,13 +8,18 @@ File: `seed_0_exp_a.json`
 
 ```json
 {
-  "seed": 0,
-  "experiment": "A",
+  "config": {
+    "seed_id": 0,
+    "initial_atoms": 50,
+    "max_steps": 10000,
+    "p_bond": 0.5,
+    "alphabet": "ABCD",
+    "symmetric": false
+  },
   "snapshots": {
     "100": {
       "a_total": <int>,
-      "n_molecules": <int>,
-      "molecules_sorted": ["<flat_repr>", ...]
+      "sorted_molecules": ["<flat_repr>", ...]
     },
     "1000": { ... },
     "10000": { ... }
@@ -27,4 +32,4 @@ File: `seed_0_exp_a.json`
 - **Exact integer match** on `a_total` and sorted molecule lists
 - Only regenerate when RNG call order intentionally changes
 - Document reason for regeneration in commit message
-- Golden data will be generated in Phase 2 when the reactor is implemented
+- Current fixture: `tests/golden_traces/seed_0_exp_a.json`
