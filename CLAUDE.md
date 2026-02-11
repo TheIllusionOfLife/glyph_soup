@@ -76,6 +76,9 @@ Batch mode (`--seed-start/--seed-end`):
 - `outputs/exp_a/seed_{seed}/summary_seed_{seed}.json`
 - `outputs/exp_a/params/seed_{seed}.json`
 - `outputs/exp_a/analysis/batch_summary.json`
+- `outputs/exp_a/analysis/calibration.json`
+  - Includes `thresholds`, `stable_a_total_mean`, per-seed `transitions`, and
+    `data_quality` (trace coverage/completeness metadata)
 
 ## Statistical Framework
 

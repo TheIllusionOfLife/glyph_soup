@@ -16,7 +16,7 @@ def test_detect_transition_acceleration_detects_sustained_change():
 
     assert result["detected"] is True
     assert result["transition_index"] is not None
-    assert result["transition_index"] >= 40
+    assert result["transition_index"] == 42
 
 
 def test_detect_transition_acceleration_ignores_single_spike():

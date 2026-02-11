@@ -2,6 +2,18 @@
 
 from __future__ import annotations
 
+from typing import TypedDict
+
+
+class TransitionDetectionResult(TypedDict):
+    """Transition detection result aligned to source time-series step indices."""
+
+    detected: bool
+    transition_index: int | None
+    theta: float
+    k: int
+    window: int
+
 
 def _moving_average(series: list[float], window: int) -> list[float]:
     if window <= 1:
@@ -27,13 +39,17 @@ def _second_diff(series: list[float]) -> list[float]:
 
 
 def detect_transition_acceleration(
-    series: list[float],
+    series: list[float] | list[int],
     *,
     window: int = 1000,
     k: int = 500,
     theta: float = 0.0,
-) -> dict[str, bool | int | float | None]:
-    """Detect a sustained acceleration-based transition in a time series."""
+) -> TransitionDetectionResult:
+    """Detect sustained acceleration and report source-series transition index.
+
+    The returned ``transition_index`` is in the original input series coordinate
+    system. It denotes the first index of the detected sustained acceleration run.
+    """
     if window < 1:
         raise ValueError(f"window must be >= 1, got {window}")
     if k < 1:

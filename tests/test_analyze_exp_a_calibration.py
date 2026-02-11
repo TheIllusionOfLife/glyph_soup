@@ -86,6 +86,9 @@ def test_analyze_exp_a_summaries_produces_calibration_thresholds(tmp_path: Path)
     assert calibration["thresholds"]["max_ma_p99"] == 7
     assert calibration["stable_a_total_mean"]["min"] == 7
     assert calibration["stable_a_total_mean"]["max"] == 21
+    data_quality = calibration["data_quality"]
+    assert data_quality["data_complete"] is True
+    assert data_quality["missing_trace_seed_ids"] == []
 
 
 def test_analyze_exp_a_summaries_fails_when_trace_required_but_missing(tmp_path: Path):
@@ -106,4 +109,4 @@ def test_analyze_exp_a_summaries_fails_when_trace_required_but_missing(tmp_path:
     )
 
     with pytest.raises(FileNotFoundError, match="trace_seed_0.csv"):
-        analyze_exp_a_summaries(in_dir, require_traces=True)
+        analyze_exp_a_summaries(in_dir)

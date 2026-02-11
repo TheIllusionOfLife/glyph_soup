@@ -91,6 +91,7 @@ def main() -> None:
     aggregate = analyze_exp_a_summaries(
         args.output_dir,
         out_path=args.output_dir / "analysis" / "batch_summary.json",
+        require_traces=True,
     )
     calibration_path = args.output_dir / "analysis" / "calibration.json"
     calibration_path.parent.mkdir(parents=True, exist_ok=True)

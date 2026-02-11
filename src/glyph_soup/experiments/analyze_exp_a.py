@@ -8,7 +8,10 @@ import math
 from pathlib import Path
 from statistics import mean, median
 
-from glyph_soup.experiments.transition_detection import detect_transition_acceleration
+from glyph_soup.experiments.transition_detection import (
+    TransitionDetectionResult,
+    detect_transition_acceleration,
+)
 
 
 def _percentile(values: list[int], q: float) -> int:
@@ -47,7 +50,7 @@ def analyze_exp_a_summaries(
     stable_end: int = 100_000,
     transition_window: int = 1000,
     transition_k: int = 500,
-    require_traces: bool = False,
+    require_traces: bool = True,
 ) -> dict[str, object]:
     """Aggregate per-seed Experiment A summary files."""
     summary_paths = sorted(input_dir.glob("seed_*/summary_seed_*.json"))
@@ -61,7 +64,9 @@ def analyze_exp_a_summaries(
     molecule_counts: list[int] = []
     max_mas: list[int] = []
     stable_means: list[int] = []
-    transitions: dict[str, dict[str, bool | int | float | None]] = {}
+    transitions: dict[str, TransitionDetectionResult] = {}
+    trace_seed_ids: list[int] = []
+    missing_trace_seed_ids: list[int] = []
     for path in summary_paths:
         row = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(row, dict):
@@ -84,6 +89,7 @@ def analyze_exp_a_summaries(
 
         trace_path = path.parent / f"trace_seed_{seed_id}.csv"
         if trace_path.exists():
+            trace_seed_ids.append(seed_id)
             a_series, stable_values = _read_trace_a_series_and_stable_window(
                 trace_path,
                 stable_start=stable_start,
@@ -91,15 +97,18 @@ def analyze_exp_a_summaries(
             )
             stable_means.append(int(mean(stable_values)) if stable_values else 0)
             transitions[str(seed_id)] = detect_transition_acceleration(
-                [float(v) for v in a_series],
+                a_series,
                 window=transition_window,
                 k=transition_k,
                 theta=0.0,
             )
-        elif require_traces:
-            raise FileNotFoundError(str(trace_path))
+        else:
+            missing_trace_seed_ids.append(seed_id)
+            if require_traces:
+                raise FileNotFoundError(str(trace_path))
 
     a_total_p99 = _percentile(a_totals, 0.99)
+    sorted_missing_trace_seed_ids = sorted(missing_trace_seed_ids)
     payload: dict[str, object] = {
         "seed_count": len(seed_ids),
         "seed_ids": sorted(seed_ids),
@@ -115,6 +124,12 @@ def analyze_exp_a_summaries(
             },
             "stable_a_total_mean": _summarize(stable_means),
             "transitions": transitions,
+            "data_quality": {
+                "summary_seed_count": len(seed_ids),
+                "trace_seed_count": len(trace_seed_ids),
+                "missing_trace_seed_ids": sorted_missing_trace_seed_ids,
+                "data_complete": len(sorted_missing_trace_seed_ids) == 0,
+            },
         },
     }
 
@@ -139,6 +154,13 @@ def _read_trace_a_series_and_stable_window(
     stable_values: list[int] = []
     with trace_path.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames or []
+        required_columns = {"step", "a_total"}
+        missing_columns = sorted(required_columns - set(fieldnames))
+        if missing_columns:
+            raise ValueError(
+                f"{trace_path} missing required columns: {missing_columns}"
+            )
         for row in reader:
             val = int(row["a_total"])
             step = int(row["step"])
