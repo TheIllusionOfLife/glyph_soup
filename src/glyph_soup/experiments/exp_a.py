@@ -69,7 +69,7 @@ def main() -> None:
     if args.seed_end < args.seed_start:
         raise ValueError("--seed-end must be >= --seed-start")
 
-    seed_ids = tuple(range(args.seed_start, args.seed_end + 1))
+    seed_ids = range(args.seed_start, args.seed_end + 1)
     params_dir = args.output_dir / "params"
     params_dir.mkdir(parents=True, exist_ok=True)
     for seed_id in seed_ids:

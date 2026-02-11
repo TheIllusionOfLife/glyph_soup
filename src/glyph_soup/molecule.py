@@ -171,8 +171,7 @@ def break_fragments_at(compound: Compound, position: int) -> tuple[Molecule, ...
             f"{compound.internal_nodes_count} internal node(s)"
         )
 
-    counter = 0
-    found, fragments = _break_fragments_pre_order(compound, position, counter)
+    found, fragments = _break_fragments_pre_order(compound, position)
     if not found:
         raise IndexError(
             f"Position {position} out of range for tree with "
@@ -198,9 +197,8 @@ def _collect_pre_order(mol: Molecule, acc: list[Compound]) -> None:
 def _break_fragments_pre_order(
     mol: Molecule,
     target_position: int,
-    counter: int,
 ) -> tuple[bool, list[Molecule]]:
-    next_counter = counter
+    next_counter = 0
 
     def walk(node: Molecule) -> tuple[bool, list[Molecule]]:
         nonlocal next_counter

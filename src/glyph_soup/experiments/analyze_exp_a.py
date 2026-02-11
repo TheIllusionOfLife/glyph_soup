@@ -48,7 +48,9 @@ def analyze_exp_a_summaries(
     if not summary_paths:
         raise FileNotFoundError(f"No summary_seed_*.json found under {input_dir}")
 
-    rows: list[dict[str, object]] = []
+    seed_ids: list[int] = []
+    a_totals: list[int] = []
+    molecule_counts: list[int] = []
     for path in summary_paths:
         row = json.loads(path.read_text(encoding="utf-8"))
         assert isinstance(row, dict)
@@ -56,15 +58,13 @@ def analyze_exp_a_summaries(
         missing = required_keys - row.keys()
         if missing:
             raise ValueError(f"{path} missing required keys: {sorted(missing)}")
-        rows.append(row)
-
-    seed_ids = sorted(int(row["seed_id"]) for row in rows)
-    a_totals = [int(row["final_a_total"]) for row in rows]
-    molecule_counts = [int(row["final_molecule_count"]) for row in rows]
+        seed_ids.append(int(row["seed_id"]))
+        a_totals.append(int(row["final_a_total"]))
+        molecule_counts.append(int(row["final_molecule_count"]))
 
     payload: dict[str, object] = {
-        "seed_count": len(rows),
-        "seed_ids": seed_ids,
+        "seed_count": len(seed_ids),
+        "seed_ids": sorted(seed_ids),
         "a_total": _summarize(a_totals),
         "final_molecule_count": _summarize(molecule_counts),
         "a_total_p99": _percentile(a_totals, 0.99),
