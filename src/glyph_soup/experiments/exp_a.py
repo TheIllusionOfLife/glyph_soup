@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -68,6 +69,11 @@ def main() -> None:
         raise ValueError("--seed-start and --seed-end must be provided together")
     if args.seed_end < args.seed_start:
         raise ValueError("--seed-end must be >= --seed-start")
+    if args.seed != 0:
+        print(
+            "--seed is ignored in batch mode when seed range is provided",
+            file=sys.stderr,
+        )
 
     seed_ids = range(args.seed_start, args.seed_end + 1)
     params_dir = args.output_dir / "params"
@@ -82,9 +88,16 @@ def main() -> None:
     for seed_id, result in run_experiment_a_batch(cfg, seed_ids=seed_ids):
         _write_run_outputs(result, args.output_dir / f"seed_{seed_id}")
 
-    analyze_exp_a_summaries(
+    aggregate = analyze_exp_a_summaries(
         args.output_dir,
         out_path=args.output_dir / "analysis" / "batch_summary.json",
+        require_traces=True,
+    )
+    calibration_path = args.output_dir / "analysis" / "calibration.json"
+    calibration_path.parent.mkdir(parents=True, exist_ok=True)
+    calibration_path.write_text(
+        json.dumps(aggregate["calibration"], indent=2),
+        encoding="utf-8",
     )
 
 

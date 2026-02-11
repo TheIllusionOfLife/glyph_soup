@@ -67,3 +67,34 @@ def test_exp_a_cli_batch_mode_writes_seed_outputs(tmp_path):
     batch_summary = json.loads(batch_summary_path.read_text(encoding="utf-8"))
     assert batch_summary["seed_count"] == 2
     assert batch_summary["seed_ids"] == [0, 1]
+
+    calibration_path = out_dir / "analysis" / "calibration.json"
+    assert calibration_path.exists()
+    calibration = json.loads(calibration_path.read_text(encoding="utf-8"))
+    assert "thresholds" in calibration
+
+
+def test_exp_a_cli_batch_mode_warns_seed_is_ignored(tmp_path):
+    out_dir = tmp_path / "out"
+    cmd = [
+        "uv",
+        "run",
+        "python",
+        "-m",
+        "glyph_soup.experiments.exp_a",
+        "--seed",
+        "99",
+        "--steps",
+        "10",
+        "--initial-atoms",
+        "12",
+        "--output-dir",
+        str(out_dir),
+        "--seed-start",
+        "0",
+        "--seed-end",
+        "1",
+    ]
+    result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+    assert result.returncode == 0
+    assert "--seed is ignored in batch mode" in result.stderr
