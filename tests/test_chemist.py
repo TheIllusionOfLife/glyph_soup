@@ -108,3 +108,34 @@ def test_reaction_step_can_try_break_before_bond():
 
     chemist.reaction_step(reactor, cfg, StubRng())  # type: ignore[arg-type]
     assert calls == ["break", "bond"]
+
+
+def test_break_step_can_break_non_root_and_preserve_mass():
+    cfg = SimulationConfig(
+        initial_atoms=3,
+        p_bond=0.0,
+        max_steps=1,
+        break_function=BreakFunction(kind="node_count", beta=1.0),
+    )
+    ab = join(Atom("A"), Atom("B"))
+    abc = join(ab, Atom("C"))
+    reactor = Reactor([abc])
+    chemist = Chemist()
+
+    class StubRng:
+        def choice(self, values):
+            return values[0]
+
+        def random(self) -> float:
+            return 0.0
+
+        def randrange(self, n: int) -> int:
+            assert n == 2
+            return 1
+
+    event = chemist.break_step(reactor, cfg, StubRng())  # type: ignore[arg-type]
+
+    assert event is not None
+    assert event.kind == "break"
+    assert sorted(m.flat for m in event.added) == ["A", "B", "C"]
+    assert reactor.total_atoms() == 3

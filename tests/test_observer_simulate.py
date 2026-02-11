@@ -6,7 +6,7 @@ from glyph_soup.config import BreakFunction, SimulationConfig
 from glyph_soup.molecule import Atom, join
 from glyph_soup.observer import Observer
 from glyph_soup.reactor import Reactor
-from glyph_soup.simulate import run_experiment_a
+from glyph_soup.simulate import run_experiment_a, run_experiment_a_batch
 
 
 def test_observer_incremental_matches_full_scan():
@@ -55,3 +55,11 @@ def test_observer_can_write_csv(tmp_path: Path):
     text = out.read_text(encoding="utf-8")
     assert "step" in text
     assert "a_total" in text
+
+
+def test_run_experiment_a_batch_runs_multiple_seeds():
+    cfg = SimulationConfig(initial_atoms=20, max_steps=40)
+    batch = list(run_experiment_a_batch(cfg, seed_ids=(0, 1, 2)))
+    assert [seed_id for seed_id, _ in batch] == [0, 1, 2]
+    assert batch[0][1].seed_id == 0
+    assert batch[1][1].seed_id == 1

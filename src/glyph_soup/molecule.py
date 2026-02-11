@@ -154,6 +154,32 @@ def break_at(compound: Compound, position: int) -> tuple[Molecule, Molecule]:
     return node.left, node.right
 
 
+def break_fragments_at(compound: Compound, position: int) -> tuple[Molecule, ...]:
+    """Break at an internal node and return all mass-preserving fragments.
+
+    For non-root cuts, this returns:
+    - The two children of the selected node
+    - Every sibling subtree on the path from the selected node to the root
+    """
+    if not isinstance(compound, Compound):
+        raise TypeError(f"Cannot break an Atom: {compound!r}")
+    if position < 0:
+        raise ValueError(f"Position must be non-negative, got {position}")
+    if position >= compound.internal_nodes_count:
+        raise IndexError(
+            f"Position {position} out of range for tree with "
+            f"{compound.internal_nodes_count} internal node(s)"
+        )
+
+    found, fragments = _break_fragments_pre_order(compound, position)
+    if not found:
+        raise IndexError(
+            f"Position {position} out of range for tree with "
+            f"{compound.internal_nodes_count} internal node(s)"
+        )
+    return tuple(fragments)
+
+
 def _collect_internal_nodes(mol: Molecule) -> list[Compound]:
     """Collect internal nodes in pre-order traversal."""
     result: list[Compound] = []
@@ -166,6 +192,37 @@ def _collect_pre_order(mol: Molecule, acc: list[Compound]) -> None:
         acc.append(mol)
         _collect_pre_order(mol.left, acc)
         _collect_pre_order(mol.right, acc)
+
+
+def _break_fragments_pre_order(
+    mol: Molecule,
+    target_position: int,
+) -> tuple[bool, list[Molecule]]:
+    next_counter = 0
+
+    def walk(node: Molecule) -> tuple[bool, list[Molecule]]:
+        nonlocal next_counter
+        if isinstance(node, Atom):
+            return False, []
+
+        current = next_counter
+        next_counter += 1
+        if current == target_position:
+            return True, [node.left, node.right]
+
+        found_left, left_fragments = walk(node.left)
+        if found_left:
+            left_fragments.append(node.right)
+            return True, left_fragments
+
+        found_right, right_fragments = walk(node.right)
+        if found_right:
+            right_fragments.append(node.left)
+            return True, right_fragments
+
+        return False, []
+
+    return walk(mol)
 
 
 def canonicalize(mol: Molecule) -> Molecule:

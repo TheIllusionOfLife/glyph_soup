@@ -516,7 +516,7 @@ def _estimate_random_ma_ceiling(
     then return the 99th percentile of MA across all molecules in the tank.
     This approximates Experiment A's random condition.
     """
-    from glyph_soup.molecule import break_at
+    from glyph_soup.molecule import break_fragments_at
 
     rng = random.Random(rng_seed)
 
@@ -549,13 +549,11 @@ def _estimate_random_ma_ceiling(
             k = rng.choice(compounds)
             mol = tank[k]
             assert isinstance(mol, Compound)
-            # Break at root (position 0) to preserve mass conservation
-            # Breaking at non-root positions would orphan parts of the tree
-            left, right = break_at(mol, 0)
+            cut_pos = rng.randrange(mol.internal_nodes_count)
+            fragments = break_fragments_at(mol, cut_pos)
             tank[k] = tank[-1]
             tank.pop()
-            tank.append(left)
-            tank.append(right)
+            tank.extend(fragments)
 
     # Compute MA for all molecules in the tank
     ma_values = [exact_ma(mol) for mol in tank]

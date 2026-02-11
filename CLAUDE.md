@@ -60,7 +60,22 @@ uv run ruff format src/ tests/
 
 # Run an experiment (expected pattern)
 uv run python -m glyph_soup.experiments.exp_a --seed 0
+
+# Run batch Experiment A (inclusive seed range)
+uv run python -m glyph_soup.experiments.exp_a --seed-start 0 --seed-end 99
 ```
+
+## Experiment A Output Contract
+
+Single-seed mode (`--seed`):
+- `outputs/exp_a/trace_seed_{seed}.csv`
+- `outputs/exp_a/summary_seed_{seed}.json`
+
+Batch mode (`--seed-start/--seed-end`):
+- `outputs/exp_a/seed_{seed}/trace_seed_{seed}.csv`
+- `outputs/exp_a/seed_{seed}/summary_seed_{seed}.json`
+- `outputs/exp_a/params/seed_{seed}.json`
+- `outputs/exp_a/analysis/batch_summary.json`
 
 ## Statistical Framework
 

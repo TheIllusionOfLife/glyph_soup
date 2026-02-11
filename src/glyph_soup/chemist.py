@@ -7,7 +7,7 @@ import random
 from dataclasses import dataclass
 
 from glyph_soup.config import BreakFunction, SimulationConfig
-from glyph_soup.molecule import Compound, Molecule, break_at, join
+from glyph_soup.molecule import Compound, Molecule, break_fragments_at, join
 from glyph_soup.reactor import Reactor
 
 
@@ -79,14 +79,12 @@ class Chemist:
             return None
 
         removed = reactor.remove_indices((idx,))
-        # Root-only break is currently intentional.
-        # Breaking internal bonds without orphaning subtrees requires a
-        # fragment-collecting break implementation that preserves mass.
-        left, right = break_at(target, 0)
-        reactor.add(left)
-        reactor.add(right)
+        cut_pos = rng.randrange(target.internal_nodes_count)
+        fragments = break_fragments_at(target, cut_pos)
+        for fragment in fragments:
+            reactor.add(fragment)
         reactor.step_count += 1
-        return ReactionEvent("break", tuple(removed), (left, right))
+        return ReactionEvent("break", tuple(removed), tuple(fragments))
 
     def reaction_step(
         self,

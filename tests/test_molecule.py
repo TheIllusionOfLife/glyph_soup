@@ -8,6 +8,7 @@ from glyph_soup.molecule import (
     Molecule,
     all_subtrees,
     break_at,
+    break_fragments_at,
     canonicalize,
     enumerate_molecules,
     join,
@@ -224,6 +225,42 @@ class TestBreakAt:
         left, right = break_at(abcd, 2)
         assert left == Atom("C")
         assert right == Atom("D")
+
+
+class TestBreakFragmentsAt:
+    def test_break_root_returns_two_fragments(self):
+        ab = join(Atom("A"), Atom("B"))
+        left, right = break_fragments_at(ab, 0)
+        assert left == Atom("A")
+        assert right == Atom("B")
+
+    def test_break_non_root_preserves_all_atoms(self):
+        # ((A,B),C) with break at (A,B) node -> A, B, C
+        ab = join(Atom("A"), Atom("B"))
+        abc = join(ab, Atom("C"))
+        frags = break_fragments_at(abc, 1)
+        assert sorted(m.flat for m in frags) == ["A", "B", "C"]
+        assert sum(m.leaves_count for m in frags) == abc.leaves_count
+
+    def test_break_non_root_in_balanced_tree(self):
+        # ((A,B),(C,D)) break at (A,B) node -> A, B, (C,D)
+        ab = join(Atom("A"), Atom("B"))
+        cd = join(Atom("C"), Atom("D"))
+        abcd = join(ab, cd)
+        frags = break_fragments_at(abcd, 1)
+        assert sorted(m.flat for m in frags) == ["(C,D)", "A", "B"]
+        assert sum(m.leaves_count for m in frags) == abcd.leaves_count
+
+    def test_break_fragments_at_atom_raises(self):
+        with pytest.raises((ValueError, TypeError)):
+            break_fragments_at(Atom("A"), 0)
+
+    def test_break_fragments_out_of_range_raises(self):
+        ab = join(Atom("A"), Atom("B"))
+        with pytest.raises((ValueError, IndexError)):
+            break_fragments_at(ab, -1)
+        with pytest.raises((ValueError, IndexError)):
+            break_fragments_at(ab, 1)
 
 
 # ---------- all_subtrees / subtree_counts ----------
