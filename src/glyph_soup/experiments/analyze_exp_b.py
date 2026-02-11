@@ -18,12 +18,17 @@ def analyze_exp_b_outputs(
 ) -> dict[str, object]:
     """Analyze all Experiment B modes and build a comparison report."""
     mode_rows: dict[str, dict[str, object]] = {}
+    available_modes = [mode for mode in MODES if (input_dir / mode).exists()]
+    if not available_modes:
+        raise FileNotFoundError(
+            f"No Experiment B mode directories found under {input_dir}"
+        )
 
-    for mode in MODES:
+    for mode in available_modes:
         mode_dir = input_dir / mode
-        if not mode_dir.exists():
-            raise FileNotFoundError(f"missing mode output directory: {mode}")
         summary_paths = sorted(mode_dir.glob("seed_*/summary_seed_*.json"))
+        if not summary_paths:
+            summary_paths = sorted(mode_dir.glob("summary_seed_*.json"))
         if not summary_paths:
             raise FileNotFoundError(f"No summary files found for mode '{mode}'")
 
@@ -63,7 +68,7 @@ def analyze_exp_b_outputs(
         }
 
     payload: dict[str, object] = {
-        "mode_count": len(MODES),
+        "mode_count": len(mode_rows),
         "modes": mode_rows,
     }
 

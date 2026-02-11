@@ -159,8 +159,8 @@ def test_catalyst_is_not_consumed_when_match_boosts_bond():
             assert k == 2
             return [0, 1]
 
-        def choice(self, values):
-            return values[0]
+        def randrange(self, n: int) -> int:
+            return 2
 
     event = chemist.bond_step(reactor, cfg, StubRng())  # type: ignore[arg-type]
 

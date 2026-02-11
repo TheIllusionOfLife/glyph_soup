@@ -48,13 +48,14 @@ class Chemist:
     ) -> ReactionEvent | None:
         if len(reactor.tank) < 2:
             return None
+        bond_roll = rng.random()
         if cfg.catalysis.enabled and len(reactor.tank) >= 3:
             i, j = reactor.sample_distinct(2, rng)
-            substrates = {i, j}
-            catalyst_pool = [
-                idx for idx in range(len(reactor.tank)) if idx not in substrates
-            ]
-            catalyst_idx = rng.choice(catalyst_pool)
+            substrate_idxs = {i, j}
+            while True:
+                catalyst_idx = rng.randrange(len(reactor.tank))
+                if catalyst_idx not in substrate_idxs:
+                    break
 
             x = reactor.tank[i]
             y = reactor.tank[j]
@@ -70,10 +71,10 @@ class Chemist:
             p_bond = cfg.p_bond
             if matched:
                 p_bond = min(1.0, cfg.p_bond * cfg.catalysis.boost)
-            if rng.random() >= p_bond:
+            if bond_roll >= p_bond:
                 return None
         else:
-            if rng.random() >= cfg.p_bond:
+            if bond_roll >= cfg.p_bond:
                 return None
             i, j = reactor.sample_distinct(2, rng)
 

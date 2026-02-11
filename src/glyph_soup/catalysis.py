@@ -48,7 +48,8 @@ def _random_table_match(
     seed_id: int,
     match_prob: float,
 ) -> bool:
-    payload = f"{seed_id}|{catalyst.flat}|{x.flat}|{y.flat}".encode()
+    substrates = sorted([x.flat, y.flat])
+    payload = f"{seed_id}|{catalyst.flat}|{substrates[0]}|{substrates[1]}".encode()
     digest = blake2b(payload, digest_size=8).digest()
     score = int.from_bytes(digest, byteorder="big") / (2**64 - 1)
     return score < match_prob
