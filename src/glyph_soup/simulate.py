@@ -169,7 +169,9 @@ def _run_experiment_c(
         if cfg.ablation.mutation_enabled:
             mut_event = chemist.mutate_step(reactor, cfg, rng)
             if mut_event is not None:
-                observer.apply_transition(list(mut_event.removed), list(mut_event.added))
+                observer.apply_transition(
+                    list(mut_event.removed), list(mut_event.added)
+                )
                 state_changed = True
 
         if cfg.ablation.energy_enabled:
