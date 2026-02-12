@@ -79,64 +79,32 @@ def summarize_floats(values: list[float]) -> dict[str, float]:
 
 
 def wilcoxon_signed_rank(x: list[float], y: list[float]) -> dict[str, float]:
-    """Wilcoxon signed-rank test (pure Python, no scipy dependency).
+    """Wilcoxon signed-rank test via scipy.stats.wilcoxon.
 
     Returns {"statistic": W, "p_value": p, "effect_size_r": r}.
-    Uses normal approximation with tie correction and continuity
-    correction. Suitable for n >= 10; for smaller n the p-value
-    is approximate.
     """
+    from scipy.stats import wilcoxon as _scipy_wilcoxon
+
     n = len(x)
     if n != len(y):
         raise ValueError("x and y must have the same length")
 
     diffs = [xi - yi for xi, yi in zip(x, y, strict=True)]
-    # Remove zero differences
-    nonzero = [(abs(d), d) for d in diffs if d != 0.0]
-    n_eff = len(nonzero)
+    n_eff = sum(1 for d in diffs if d != 0.0)
 
     if n_eff == 0:
         return {"statistic": 0.0, "p_value": 1.0, "effect_size_r": 0.0}
 
-    # Rank by absolute value, tracking tie group sizes
-    nonzero.sort(key=lambda t: t[0])
-    ranks: list[float] = []
-    tie_sizes: list[int] = []
-    i = 0
-    while i < n_eff:
-        j = i
-        while j < n_eff and nonzero[j][0] == nonzero[i][0]:
-            j += 1
-        avg_rank = (i + j + 1) / 2.0
-        tie_size = j - i
-        tie_sizes.append(tie_size)
-        for _k in range(i, j):
-            ranks.append(avg_rank)
-        i = j
+    res = _scipy_wilcoxon(x, y)
+    _z = getattr(res, "zstatistic", None)
+    z = abs(_z) if _z is not None and math.isfinite(_z) else 0.0
+    r = z / math.sqrt(n_eff) if n_eff > 0 else 0.0
 
-    w_plus = sum(r for r, (_, d) in zip(ranks, nonzero, strict=True) if d > 0)
-    w_minus = sum(r for r, (_, d) in zip(ranks, nonzero, strict=True) if d < 0)
-    w = min(w_plus, w_minus)
-
-    # Normal approximation with tie correction
-    mu = n_eff * (n_eff + 1) / 4.0
-    tie_correction = sum(t**3 - t for t in tie_sizes) / 48.0
-    variance = n_eff * (n_eff + 1) * (2 * n_eff + 1) / 24.0 - tie_correction
-    sigma = math.sqrt(max(0.0, variance))
-    if sigma == 0:
-        return {"statistic": w, "p_value": 1.0, "effect_size_r": 0.0}
-
-    z = (w - mu - 0.5) / sigma  # continuity correction
-    # Two-tailed p-value via normal CDF approximation
-    p_value = 2.0 * _normal_cdf(-abs(z))
-    r = abs(z) / math.sqrt(n_eff)
-
-    return {"statistic": w, "p_value": p_value, "effect_size_r": r}
-
-
-def _normal_cdf(x: float) -> float:
-    """Standard normal CDF approximation (Abramowitz & Stegun)."""
-    return 0.5 * math.erfc(-x / math.sqrt(2))
+    return {
+        "statistic": float(res.statistic),
+        "p_value": float(res.pvalue),
+        "effect_size_r": r,
+    }
 
 
 def holm_bonferroni(p_values: list[float]) -> list[float]:

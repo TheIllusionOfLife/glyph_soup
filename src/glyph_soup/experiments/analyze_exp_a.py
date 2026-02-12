@@ -140,6 +140,26 @@ def analyze_exp_a_summaries(
     return payload
 
 
+def load_per_seed_stable_means(
+    base_dir: Path,
+    *,
+    stable_start: int = 50_000,
+    stable_end: int = 100_000,
+) -> dict[int, float]:
+    """Return {seed_id: mean_a_total_in_stable_window} from trace CSVs."""
+    result: dict[int, float] = {}
+    trace_paths = sorted(base_dir.glob("seed_*/trace_seed_*.csv"))
+    if not trace_paths:
+        trace_paths = sorted(base_dir.glob("trace_seed_*.csv"))
+    for tp in trace_paths:
+        seed_id = int(tp.stem.split("_")[-1])
+        _, stable_values = _read_trace_a_series_and_stable_window(
+            tp, stable_start=stable_start, stable_end=stable_end
+        )
+        result[seed_id] = mean(stable_values) if stable_values else 0.0
+    return result
+
+
 def _read_trace_a_series_and_stable_window(
     trace_path: Path,
     *,
