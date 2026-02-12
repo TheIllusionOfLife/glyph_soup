@@ -60,6 +60,37 @@ class CatalysisConfig:
 
 
 @dataclass(frozen=True)
+class AblationConfig:
+    """Ablation parameters for Experiment C (spec §10)."""
+
+    # C-2: Catalyst resistance
+    resistance_enabled: bool = False
+    resistance_factor: float = 0.5  # gamma < 1
+
+    # C-3: Mutation
+    mutation_enabled: bool = False
+    mutation_rate: float = 0.001  # mu
+
+    # C-4: Energy efficiency
+    energy_enabled: bool = False
+    energy_cost_per_node: float = 0.001
+
+    def __post_init__(self) -> None:
+        if not (0.0 <= self.resistance_factor <= 1.0):
+            raise ValueError(
+                f"resistance_factor must be in [0, 1], got {self.resistance_factor}"
+            )
+        if not (0.0 <= self.mutation_rate <= 1.0):
+            raise ValueError(
+                f"mutation_rate must be in [0, 1], got {self.mutation_rate}"
+            )
+        if self.energy_cost_per_node < 0:
+            raise ValueError(
+                f"energy_cost_per_node must be >= 0, got {self.energy_cost_per_node}"
+            )
+
+
+@dataclass(frozen=True)
 class SimulationConfig:
     """Complete simulation configuration (spec §3, §6).
 
@@ -74,6 +105,7 @@ class SimulationConfig:
     p_bond: float = 0.5
     break_function: BreakFunction = field(default_factory=BreakFunction)
     catalysis: CatalysisConfig = field(default_factory=CatalysisConfig)
+    ablation: AblationConfig = field(default_factory=AblationConfig)
     symmetric: bool = False
     seed_id: int = 0
 
@@ -113,6 +145,8 @@ class SimulationConfig:
             data["break_function"] = BreakFunction(**data["break_function"])
         if "catalysis" in data and isinstance(data["catalysis"], dict):
             data["catalysis"] = CatalysisConfig(**data["catalysis"])
+        if "ablation" in data and isinstance(data["ablation"], dict):
+            data["ablation"] = AblationConfig(**data["ablation"])
         # Remove derived fields that aren't constructor params
         data.pop("alphabet_size", None)
         return cls(**data)

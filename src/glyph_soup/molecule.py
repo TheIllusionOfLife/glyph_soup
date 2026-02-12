@@ -225,6 +225,39 @@ def _break_fragments_pre_order(
     return walk(mol)
 
 
+def mutate_leaf(mol: Molecule, position: int, new_char: str) -> Molecule:
+    """Replace the leaf at *position* (pre-order index among leaves) with *new_char*.
+
+    Returns a new molecule (immutable rebuild). Raises IndexError if position
+    is out of range.
+    """
+    total = mol.leaves_count
+    if position < 0 or position >= total:
+        raise IndexError(
+            f"Leaf position {position} out of range for molecule with {total} leaves"
+        )
+    result, _ = _mutate_leaf_walk(mol, position, new_char, 0)
+    return result
+
+
+def _mutate_leaf_walk(
+    mol: Molecule, target: int, new_char: str, counter: int
+) -> tuple[Molecule, int]:
+    if isinstance(mol, Atom):
+        if counter == target:
+            return Atom(new_char), counter + 1
+        return mol, counter + 1
+    assert isinstance(mol, Compound)
+    new_left, counter = _mutate_leaf_walk(mol.left, target, new_char, counter)
+    if counter > target and new_left is not mol.left:
+        # Already mutated in left subtree
+        return Compound(new_left, mol.right), counter
+    new_right, counter = _mutate_leaf_walk(mol.right, target, new_char, counter)
+    if new_right is not mol.right:
+        return Compound(mol.left, new_right), counter
+    return mol, counter
+
+
 def canonicalize(mol: Molecule) -> Molecule:
     """Convert a molecule to canonical form (left.flat <= right.flat at every node)."""
     if isinstance(mol, Atom):
