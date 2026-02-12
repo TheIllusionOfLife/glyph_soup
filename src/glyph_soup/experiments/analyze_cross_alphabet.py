@@ -15,6 +15,43 @@ from glyph_soup.experiments.analyze_size_conditioned import (
 )
 
 
+def _pairwise_comparisons(
+    data_map: dict[str, dict[int, float]],
+) -> list[dict]:
+    """Run pairwise Wilcoxon tests with Holm-Bonferroni correction."""
+    pairwise: list[dict] = []
+    labels = sorted(data_map.keys())
+    raw_p_values: list[float] = []
+
+    for a_label, b_label in combinations(labels, 2):
+        common_seeds = sorted(
+            set(data_map[a_label].keys()) & set(data_map[b_label].keys())
+        )
+        if not common_seeds:
+            continue
+        x = [data_map[a_label][s] for s in common_seeds]
+        y = [data_map[b_label][s] for s in common_seeds]
+        test = wilcoxon_signed_rank(x, y)
+        raw_p_values.append(test["p_value"])
+        pairwise.append(
+            {
+                "alphabet_a": a_label,
+                "alphabet_b": b_label,
+                "n_common_seeds": len(common_seeds),
+                "mean_a": mean(x),
+                "mean_b": mean(y),
+                "wilcoxon": test,
+            }
+        )
+
+    if len(raw_p_values) > 1:
+        adjusted = holm_bonferroni(raw_p_values)
+        for i, pair in enumerate(pairwise):
+            pair["wilcoxon"]["p_value_adjusted"] = adjusted[i]
+
+    return pairwise
+
+
 def compare_baselines(dirs: dict[str, Path]) -> dict:
     """Compare Exp A stable A_total across alphabets (Wilcoxon paired by seed).
 
@@ -36,38 +73,32 @@ def compare_baselines(dirs: dict[str, Path]) -> dict:
             "n_seeds": len(values),
         }
 
-    pairwise: list[dict] = []
-    labels = sorted(dirs.keys())
-    raw_p_values: list[float] = []
+    return {
+        "per_alphabet": per_alphabet,
+        "pairwise": _pairwise_comparisons(stable_means),
+    }
 
-    for a_label, b_label in combinations(labels, 2):
-        common_seeds = sorted(
-            set(stable_means[a_label].keys()) & set(stable_means[b_label].keys())
-        )
-        if not common_seeds:
-            continue
-        x = [stable_means[a_label][s] for s in common_seeds]
-        y = [stable_means[b_label][s] for s in common_seeds]
-        test = wilcoxon_signed_rank(x, y)
-        raw_p_values.append(test["p_value"])
-        pairwise.append(
-            {
-                "alphabet_a": a_label,
-                "alphabet_b": b_label,
-                "n_common_seeds": len(common_seeds),
-                "mean_a": mean(x),
-                "mean_b": mean(y),
-                "wilcoxon": test,
-            }
-        )
 
-    # Apply Holm-Bonferroni correction if multiple comparisons
-    if len(raw_p_values) > 1:
-        adjusted = holm_bonferroni(raw_p_values)
-        for i, pair in enumerate(pairwise):
-            pair["wilcoxon"]["p_value_adjusted"] = adjusted[i]
+def _compare_subdirs(
+    dirs: dict[str, Path],
+    subdir_filter: callable,
+) -> dict:
+    """Compare stable means across alphabets for each subdirectory."""
+    first_dir = next(iter(dirs.values()))
+    subdirs = sorted(
+        d.name for d in first_dir.iterdir() if d.is_dir() and subdir_filter(d.name)
+    )
 
-    return {"per_alphabet": per_alphabet, "pairwise": pairwise}
+    results: dict[str, dict] = {}
+    for name in subdirs:
+        sub_means: dict[str, dict[int, float]] = {}
+        for label, base in dirs.items():
+            sub_dir = base / name
+            if sub_dir.exists():
+                sub_means[label] = load_per_seed_stable_means(sub_dir)
+        results[name] = {"pairwise": _pairwise_comparisons(sub_means)}
+
+    return results
 
 
 def compare_catalysis_effects(dirs: dict[str, Path]) -> dict:
@@ -80,46 +111,7 @@ def compare_catalysis_effects(dirs: dict[str, Path]) -> dict:
     Returns:
         Dict with per-mode, per-alphabet-pair comparisons.
     """
-    # Discover modes from first directory
-    first_dir = next(iter(dirs.values()))
-    modes = sorted(
-        d.name
-        for d in first_dir.iterdir()
-        if d.is_dir() and d.name not in ("analysis", "params")
-    )
-
-    results: dict[str, dict] = {}
-    for mode in modes:
-        mode_means: dict[str, dict[int, float]] = {}
-        for label, base in dirs.items():
-            mode_dir = base / mode
-            if mode_dir.exists():
-                mode_means[label] = load_per_seed_stable_means(mode_dir)
-
-        pairwise: list[dict] = []
-        labels = sorted(mode_means.keys())
-        for a_label, b_label in combinations(labels, 2):
-            common = sorted(
-                set(mode_means[a_label].keys()) & set(mode_means[b_label].keys())
-            )
-            if not common:
-                continue
-            x = [mode_means[a_label][s] for s in common]
-            y = [mode_means[b_label][s] for s in common]
-            test = wilcoxon_signed_rank(x, y)
-            pairwise.append(
-                {
-                    "alphabet_a": a_label,
-                    "alphabet_b": b_label,
-                    "n_common_seeds": len(common),
-                    "mean_a": mean(x),
-                    "mean_b": mean(y),
-                    "wilcoxon": test,
-                }
-            )
-        results[mode] = {"pairwise": pairwise}
-
-    return results
+    return _compare_subdirs(dirs, lambda name: name not in ("analysis", "params"))
 
 
 def compare_ablation_effects(dirs: dict[str, Path]) -> dict:
@@ -132,45 +124,10 @@ def compare_ablation_effects(dirs: dict[str, Path]) -> dict:
     Returns:
         Dict with per-stage, per-alphabet-pair comparisons.
     """
-    first_dir = next(iter(dirs.values()))
-    stages = sorted(
-        d.name
-        for d in first_dir.iterdir()
-        if d.is_dir() and d.name.startswith("c") and d.name not in ("analysis",)
+    return _compare_subdirs(
+        dirs,
+        lambda name: name.startswith("c") and name != "analysis",
     )
-
-    results: dict[str, dict] = {}
-    for stage in stages:
-        stage_means: dict[str, dict[int, float]] = {}
-        for label, base in dirs.items():
-            stage_dir = base / stage
-            if stage_dir.exists():
-                stage_means[label] = load_per_seed_stable_means(stage_dir)
-
-        pairwise: list[dict] = []
-        labels = sorted(stage_means.keys())
-        for a_label, b_label in combinations(labels, 2):
-            common = sorted(
-                set(stage_means[a_label].keys()) & set(stage_means[b_label].keys())
-            )
-            if not common:
-                continue
-            x = [stage_means[a_label][s] for s in common]
-            y = [stage_means[b_label][s] for s in common]
-            test = wilcoxon_signed_rank(x, y)
-            pairwise.append(
-                {
-                    "alphabet_a": a_label,
-                    "alphabet_b": b_label,
-                    "n_common_seeds": len(common),
-                    "mean_a": mean(x),
-                    "mean_b": mean(y),
-                    "wilcoxon": test,
-                }
-            )
-        results[stage] = {"pairwise": pairwise}
-
-    return results
 
 
 def generate_diagnostic_summary(analysis_dir: Path) -> dict:

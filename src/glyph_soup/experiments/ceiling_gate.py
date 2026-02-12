@@ -73,53 +73,41 @@ def _run_single(
     return _result_to_dict(alphabet, result)
 
 
+def _run_and_save(alphabet: str, args: argparse.Namespace, out_path: Path) -> None:
+    """Run analysis for a single alphabet and save the results."""
+    data = _run_single(
+        alphabet,
+        args.max_leaves,
+        args.random_sample_size,
+        args.rng_seed,
+        args.symmetric,
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    status = "GO" if data["go"] else "NO-GO"
+    print(
+        f"[{status}] alphabet={alphabet} "
+        f"P99={data['p99_ma']} random={data['random_estimate']:.1f} "
+        f"ratio={data['ratio']:.2f}",
+        file=sys.stderr,
+    )
+
+
 def main() -> None:
     args = parse_args()
 
     if args.alphabet is not None:
-        # Single alphabet mode
-        data = _run_single(
-            args.alphabet,
-            args.max_leaves,
-            args.random_sample_size,
-            args.rng_seed,
-            args.symmetric,
-        )
         out_path = args.output or Path(
-            f"outputs/alphabet_diagnostic/ceiling_gate/alphabet_{len(args.alphabet)}.json"
+            f"outputs/alphabet_diagnostic/ceiling_gate/"
+            f"alphabet_{len(args.alphabet)}.json"
         )
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-        status = "GO" if data["go"] else "NO-GO"
-        print(
-            f"[{status}] alphabet={args.alphabet} "
-            f"P99={data['p99_ma']} random={data['random_estimate']:.1f} "
-            f"ratio={data['ratio']:.2f}",
-            file=sys.stderr,
-        )
+        _run_and_save(args.alphabet, args, out_path)
         return
 
     # Batch mode
     out_dir = args.output_dir or Path("outputs/alphabet_diagnostic/ceiling_gate")
-    out_dir.mkdir(parents=True, exist_ok=True)
-
     for alphabet in args.alphabets:
-        data = _run_single(
-            alphabet,
-            args.max_leaves,
-            args.random_sample_size,
-            args.rng_seed,
-            args.symmetric,
-        )
-        out_path = out_dir / f"alphabet_{len(alphabet)}.json"
-        out_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-        status = "GO" if data["go"] else "NO-GO"
-        print(
-            f"[{status}] alphabet={alphabet} "
-            f"P99={data['p99_ma']} random={data['random_estimate']:.1f} "
-            f"ratio={data['ratio']:.2f}",
-            file=sys.stderr,
-        )
+        _run_and_save(alphabet, args, out_dir / f"alphabet_{len(alphabet)}.json")
 
 
 if __name__ == "__main__":
