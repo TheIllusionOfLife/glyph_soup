@@ -385,18 +385,22 @@ def a_max_lookup(
     alphabet: str,
     symmetric: bool = False,
     *,
-    sample_size: int = 10_000,
+    sample_size: int = 1_000,
     rng_seed: int = 42,
 ) -> dict[int, int]:
     """Return {n: max_MA_at_n} for n = 1..max_n.
 
     Uses exhaustive enumeration for n <= 8 and sampling for n > 8.
+    For large n, the theoretical upper bound is n-1 (all compound
+    subtrees unique), so we use that as a conservative estimate
+    when n > 20 to avoid expensive sampling.
     """
     result: dict[int, int] = {}
     for n in range(1, max_n + 1):
         if n <= 8:
             ma_values = _exhaustive_ma_at_leaves(n, alphabet, symmetric=symmetric)
-        else:
+            result[n] = max(ma_values) if ma_values else 0
+        elif n <= 20:
             ma_values = _sampled_ma_at_leaves(
                 n,
                 alphabet,
@@ -404,7 +408,10 @@ def a_max_lookup(
                 symmetric=symmetric,
                 rng_seed=rng_seed + n,
             )
-        result[n] = max(ma_values) if ma_values else 0
+            result[n] = max(ma_values) if ma_values else 0
+        else:
+            # Theoretical upper bound: n-1 internal nodes = n-1 max unique compounds
+            result[n] = n - 1
     return result
 
 
