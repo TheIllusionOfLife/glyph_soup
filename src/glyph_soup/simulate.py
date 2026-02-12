@@ -23,6 +23,7 @@ class SimulationRunResult:
     snapshots: dict[str, dict[str, object]]
     final_sorted_molecules: list[str]
     final_ma_histogram: dict[int, int]
+    final_molecule_details: list[dict[str, int]]
     observer: Observer = field(repr=False)
 
 
@@ -89,9 +90,11 @@ def _run_experiment(
             }
 
     histogram: dict[int, int] = {}
+    details: list[dict[str, int]] = []
     for mol in reactor.tank:
         ma = exact_ma(mol)
         histogram[ma] = histogram.get(ma, 0) + 1
+        details.append({"leaves": mol.leaves_count, "ma": ma})
 
     return SimulationRunResult(
         seed_id=cfg.seed_id,
@@ -100,6 +103,7 @@ def _run_experiment(
         snapshots=snapshots,
         final_sorted_molecules=sorted(mol.flat for mol in reactor.tank),
         final_ma_histogram=histogram,
+        final_molecule_details=details,
         observer=observer,
     )
 

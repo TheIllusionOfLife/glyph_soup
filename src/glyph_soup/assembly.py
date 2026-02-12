@@ -377,6 +377,37 @@ def _rank(values: list[int]) -> list[float]:
     return ranks
 
 
+# ---------- A_max lookup (spec §9.4) ----------
+
+
+def a_max_lookup(
+    max_n: int,
+    alphabet: str,
+    symmetric: bool = False,
+    *,
+    sample_size: int = 10_000,
+    rng_seed: int = 42,
+) -> dict[int, int]:
+    """Return {n: max_MA_at_n} for n = 1..max_n.
+
+    Uses exhaustive enumeration for n <= 8 and sampling for n > 8.
+    """
+    result: dict[int, int] = {}
+    for n in range(1, max_n + 1):
+        if n <= 8:
+            ma_values = _exhaustive_ma_at_leaves(n, alphabet, symmetric=symmetric)
+        else:
+            ma_values = _sampled_ma_at_leaves(
+                n,
+                alphabet,
+                sample_size=sample_size,
+                symmetric=symmetric,
+                rng_seed=rng_seed + n,
+            )
+        result[n] = max(ma_values) if ma_values else 0
+    return result
+
+
 # ---------- Ceiling gate analysis (spec §5.4) ----------
 
 
