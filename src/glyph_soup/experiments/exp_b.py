@@ -44,6 +44,7 @@ def _write_run_outputs(result: SimulationRunResult, out_dir: Path) -> None:
         "final_molecule_count": len(result.final_sorted_molecules),
         "final_a_total": result.observer.a_total,
         "final_ma_histogram": result.final_ma_histogram,
+        "final_molecule_details": result.final_molecule_details,
     }
     summary_path = out_dir / f"summary_seed_{result.seed_id}.json"
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
