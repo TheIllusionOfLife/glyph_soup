@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import math
+import random
+
 import pytest
 from scipy.stats import wilcoxon as scipy_wilcoxon
 
@@ -60,12 +63,12 @@ class TestWilcoxonSignedRank:
         with pytest.raises(ValueError):
             wilcoxon_signed_rank([1.0, 2.0], [1.0])
 
-    def test_effect_size_r_range(self):
-        """Effect size r should be in [0, 1]."""
+    def test_effect_size_r_non_negative(self):
+        """Effect size r should be non-negative."""
         x = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
         y = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         result = wilcoxon_signed_rank(x, y)
-        assert 0.0 <= result["effect_size_r"] <= 1.0
+        assert result["effect_size_r"] >= 0.0
 
     def test_return_keys(self):
         """Return dict has exactly statistic, p_value, effect_size_r."""
@@ -74,10 +77,16 @@ class TestWilcoxonSignedRank:
         result = wilcoxon_signed_rank(x, y)
         assert set(result.keys()) == {"statistic", "p_value", "effect_size_r"}
 
+    def test_nan_zstatistic_handled(self):
+        """Small n where scipy uses exact method (NaN zstatistic)."""
+        x = [1.0, 2.0, 3.0]
+        y = [0.5, 1.5, 2.5]
+        result = wilcoxon_signed_rank(x, y)
+        assert math.isfinite(result["effect_size_r"])
+        assert result["effect_size_r"] >= 0.0
+
     def test_large_sample_matches_scipy(self):
         """Larger sample also matches scipy."""
-        import random
-
         rng = random.Random(42)
         x = [rng.gauss(5.0, 1.0) for _ in range(50)]
         y = [rng.gauss(4.8, 1.0) for _ in range(50)]

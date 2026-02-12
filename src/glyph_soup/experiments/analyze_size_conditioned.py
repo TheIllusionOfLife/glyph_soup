@@ -96,7 +96,8 @@ def wilcoxon_signed_rank(x: list[float], y: list[float]) -> dict[str, float]:
         return {"statistic": 0.0, "p_value": 1.0, "effect_size_r": 0.0}
 
     res = _scipy_wilcoxon(x, y)
-    z = abs(res.zstatistic) if hasattr(res, "zstatistic") else 0.0
+    _z = getattr(res, "zstatistic", None)
+    z = abs(_z) if _z is not None and math.isfinite(_z) else 0.0
     r = z / math.sqrt(n_eff) if n_eff > 0 else 0.0
 
     return {

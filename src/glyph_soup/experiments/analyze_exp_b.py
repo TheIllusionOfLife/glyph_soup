@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from statistics import mean as _mean
 
@@ -15,6 +16,8 @@ from glyph_soup.experiments.analyze_size_conditioned import (
     holm_bonferroni,
     wilcoxon_signed_rank,
 )
+
+logger = logging.getLogger(__name__)
 
 MODES = CATALYSIS_MODES
 
@@ -116,17 +119,22 @@ def pairwise_b_vs_a(
         )
         common_seeds = sorted(set(a_means) & set(b_means))
         if len(common_seeds) < 2:
+            logger.warning(
+                "Skipping mode '%s': only %d common seeds", mode, len(common_seeds)
+            )
             continue
 
         a_vals = [a_means[s] for s in common_seeds]
         b_vals = [b_means[s] for s in common_seeds]
         test = wilcoxon_signed_rank(b_vals, a_vals)
+        a_mean_val = _mean(a_vals)
+        b_mean_val = _mean(b_vals)
 
         comparisons[mode] = {
             "n_seeds": len(common_seeds),
-            "a_stable_mean": _mean(a_vals),
-            "b_stable_mean": _mean(b_vals),
-            "delta": _mean(b_vals) - _mean(a_vals),
+            "a_stable_mean": a_mean_val,
+            "b_stable_mean": b_mean_val,
+            "delta": b_mean_val - a_mean_val,
             "statistic": test["statistic"],
             "p_value": test["p_value"],
             "effect_size_r": test["effect_size_r"],
