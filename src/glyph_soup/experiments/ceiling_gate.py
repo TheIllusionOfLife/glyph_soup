@@ -107,7 +107,7 @@ def main() -> None:
     # Batch mode
     out_dir = args.output_dir or Path("outputs/alphabet_diagnostic/ceiling_gate")
     for alphabet in args.alphabets:
-        _run_and_save(alphabet, args, out_dir / f"alphabet_{len(alphabet)}.json")
+        _run_and_save(alphabet, args, out_dir / f"alphabet_{alphabet}.json")
 
 
 if __name__ == "__main__":

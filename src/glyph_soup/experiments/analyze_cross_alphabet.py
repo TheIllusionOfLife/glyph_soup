@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Callable
 from itertools import combinations
 from pathlib import Path
 from statistics import mean
@@ -81,9 +82,11 @@ def compare_baselines(dirs: dict[str, Path]) -> dict:
 
 def _compare_subdirs(
     dirs: dict[str, Path],
-    subdir_filter: callable,
+    subdir_filter: Callable[[str], bool],
 ) -> dict:
     """Compare stable means across alphabets for each subdirectory."""
+    if not dirs:
+        return {}
     first_dir = next(iter(dirs.values()))
     subdirs = sorted(
         d.name for d in first_dir.iterdir() if d.is_dir() and subdir_filter(d.name)

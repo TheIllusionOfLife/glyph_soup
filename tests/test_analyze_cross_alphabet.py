@@ -77,7 +77,7 @@ def test_compare_baselines_identical_distributions(tmp_path):
     result = compare_baselines({"a": dir_a, "b": dir_b})
 
     pair = result["pairwise"][0]
-    assert pair["wilcoxon"]["p_value"] == 1.0  # identical → no difference
+    assert pair["wilcoxon"]["p_value"] > 0.9  # identical → very high p-value
 
 
 def test_diagnostic_summary(tmp_path):

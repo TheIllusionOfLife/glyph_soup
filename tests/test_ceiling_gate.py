@@ -59,11 +59,12 @@ def test_ceiling_gate_cli_batch(tmp_path):
     result = subprocess.run(cmd, check=True, capture_output=True, text=True)
     assert result.returncode == 0
 
-    assert (out_dir / "alphabet_4.json").exists()
-    assert (out_dir / "alphabet_8.json").exists()
+    assert (out_dir / "alphabet_ABCD.json").exists()
+    assert (out_dir / "alphabet_ABCDEFGH.json").exists()
 
-    data_4 = json.loads((out_dir / "alphabet_4.json").read_text(encoding="utf-8"))
-    data_8 = json.loads((out_dir / "alphabet_8.json").read_text(encoding="utf-8"))
+    data_4 = json.loads((out_dir / "alphabet_ABCD.json").read_text(encoding="utf-8"))
+    path_8 = out_dir / "alphabet_ABCDEFGH.json"
+    data_8 = json.loads(path_8.read_text(encoding="utf-8"))
     assert data_4["alphabet"] == "ABCD"
     assert data_8["alphabet"] == "ABCDEFGH"
 
@@ -90,8 +91,9 @@ def test_larger_alphabet_higher_ratio(tmp_path):
     result = subprocess.run(cmd, check=True, capture_output=True, text=True)
     assert result.returncode == 0
 
-    data_4 = json.loads((out_dir / "alphabet_4.json").read_text(encoding="utf-8"))
-    data_8 = json.loads((out_dir / "alphabet_8.json").read_text(encoding="utf-8"))
+    data_4 = json.loads((out_dir / "alphabet_ABCD.json").read_text(encoding="utf-8"))
+    path_8 = out_dir / "alphabet_ABCDEFGH.json"
+    data_8 = json.loads(path_8.read_text(encoding="utf-8"))
 
     # Larger alphabet should have more combinatorial room → higher ratio.
     # At small max_leaves (used for test speed), ratios may tie,
