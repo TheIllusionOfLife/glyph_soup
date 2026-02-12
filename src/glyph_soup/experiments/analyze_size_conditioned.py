@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
+import logging
 import math
 from pathlib import Path
 from statistics import mean, median
 
 from glyph_soup.assembly import a_max_lookup
+
+logger = logging.getLogger(__name__)
 
 # Bin boundaries: [2-3], [4-7], [8-11], [12-15], [16+]
 BIN_EDGES: list[tuple[str, int, int | None]] = [
@@ -56,7 +59,7 @@ def compute_normalized_assembly_index(
     return result
 
 
-def _percentile(values: list[float], q: float) -> float:
+def percentile(values: list[float], q: float) -> float:
     if not values:
         return 0.0
     s = sorted(values)
@@ -64,22 +67,24 @@ def _percentile(values: list[float], q: float) -> float:
     return s[idx]
 
 
-def _summarize_floats(values: list[float]) -> dict[str, float]:
+def summarize_floats(values: list[float]) -> dict[str, float]:
     if not values:
         return {"mean": 0.0, "median": 0.0, "p95": 0.0, "count": 0}
     return {
         "mean": mean(values),
         "median": median(values),
-        "p95": _percentile(values, 0.95),
+        "p95": percentile(values, 0.95),
         "count": len(values),
     }
 
 
-def _wilcoxon_signed_rank(x: list[float], y: list[float]) -> dict[str, float]:
+def wilcoxon_signed_rank(x: list[float], y: list[float]) -> dict[str, float]:
     """Wilcoxon signed-rank test (pure Python, no scipy dependency).
 
     Returns {"statistic": W, "p_value": p, "effect_size_r": r}.
-    Uses normal approximation for n >= 10.
+    Uses normal approximation with tie correction and continuity
+    correction. Suitable for n >= 10; for smaller n the p-value
+    is approximate.
     """
     n = len(x)
     if n != len(y):
@@ -93,15 +98,18 @@ def _wilcoxon_signed_rank(x: list[float], y: list[float]) -> dict[str, float]:
     if n_eff == 0:
         return {"statistic": 0.0, "p_value": 1.0, "effect_size_r": 0.0}
 
-    # Rank by absolute value
+    # Rank by absolute value, tracking tie group sizes
     nonzero.sort(key=lambda t: t[0])
     ranks: list[float] = []
+    tie_sizes: list[int] = []
     i = 0
     while i < n_eff:
         j = i
         while j < n_eff and nonzero[j][0] == nonzero[i][0]:
             j += 1
         avg_rank = (i + j + 1) / 2.0
+        tie_size = j - i
+        tie_sizes.append(tie_size)
         for _k in range(i, j):
             ranks.append(avg_rank)
         i = j
@@ -110,13 +118,15 @@ def _wilcoxon_signed_rank(x: list[float], y: list[float]) -> dict[str, float]:
     w_minus = sum(r for r, (_, d) in zip(ranks, nonzero, strict=True) if d < 0)
     w = min(w_plus, w_minus)
 
-    # Normal approximation
+    # Normal approximation with tie correction
     mu = n_eff * (n_eff + 1) / 4.0
-    sigma = math.sqrt(n_eff * (n_eff + 1) * (2 * n_eff + 1) / 24.0)
+    tie_correction = sum(t**3 - t for t in tie_sizes) / 48.0
+    variance = n_eff * (n_eff + 1) * (2 * n_eff + 1) / 24.0 - tie_correction
+    sigma = math.sqrt(max(0.0, variance))
     if sigma == 0:
         return {"statistic": w, "p_value": 1.0, "effect_size_r": 0.0}
 
-    z = (w - mu) / sigma
+    z = (w - mu - 0.5) / sigma  # continuity correction
     # Two-tailed p-value via normal CDF approximation
     p_value = 2.0 * _normal_cdf(-abs(z))
     r = abs(z) / math.sqrt(n_eff)
@@ -129,7 +139,7 @@ def _normal_cdf(x: float) -> float:
     return 0.5 * math.erfc(-x / math.sqrt(2))
 
 
-def _holm_bonferroni(p_values: list[float]) -> list[float]:
+def holm_bonferroni(p_values: list[float]) -> list[float]:
     """Apply Holm-Bonferroni correction to a list of p-values."""
     n = len(p_values)
     indexed = sorted(enumerate(p_values), key=lambda t: t[1])
@@ -148,17 +158,18 @@ def analyze_size_conditioned(
     *,
     out_path: Path | None = None,
     max_leaves_for_amax: int = 30,
+    alphabet: str = "ABCD",
 ) -> dict[str, object]:
     """Run size-conditioned analysis comparing Exp A vs Exp B modes."""
     # Load per-seed summaries
-    a_seeds = _load_seed_details(exp_a_dir)
+    a_seeds = load_seed_details(exp_a_dir)
     b_modes: dict[str, dict[int, list[dict[str, int]]]] = {}
     for mode_dir in sorted(exp_b_dir.iterdir()):
         if mode_dir.is_dir() and mode_dir.name not in ("analysis", "params"):
-            b_modes[mode_dir.name] = _load_seed_details(mode_dir)
+            b_modes[mode_dir.name] = load_seed_details(mode_dir)
 
     # Pre-compute A_max table
-    a_max_table = a_max_lookup(max_leaves_for_amax, "ABCD")
+    a_max_table = a_max_lookup(max_leaves_for_amax, alphabet)
 
     results: dict[str, object] = {}
 
@@ -191,17 +202,17 @@ def analyze_size_conditioned(
                 a_norm_means.append(mean(a_norms) if a_norms else 0.0)
                 b_norm_means.append(mean(b_norms) if b_norms else 0.0)
 
-            test_result = _wilcoxon_signed_rank(b_bin_means, a_bin_means)
-            norm_test = _wilcoxon_signed_rank(b_norm_means, a_norm_means)
+            test_result = wilcoxon_signed_rank(b_bin_means, a_bin_means)
+            norm_test = wilcoxon_signed_rank(b_norm_means, a_norm_means)
 
             bin_results[bin_label] = {
                 "n_seeds": len(common_seeds),
-                "a_mean_ma": _summarize_floats(a_bin_means),
-                "b_mean_ma": _summarize_floats(b_bin_means),
+                "a_mean_ma": summarize_floats(a_bin_means),
+                "b_mean_ma": summarize_floats(b_bin_means),
                 "raw_wilcoxon": test_result,
                 "normalized_wilcoxon": norm_test,
-                "a_normalized": _summarize_floats(a_norm_means),
-                "b_normalized": _summarize_floats(b_norm_means),
+                "a_normalized": summarize_floats(a_norm_means),
+                "b_normalized": summarize_floats(b_norm_means),
             }
 
         # Size distribution summary
@@ -221,8 +232,8 @@ def analyze_size_conditioned(
         results[mode_name] = {
             "bin_analysis": bin_results,
             "size_distribution": {
-                "a": _summarize_floats([float(x) for x in a_all_leaves]),
-                "b": _summarize_floats([float(x) for x in b_all_leaves]),
+                "a": summarize_floats([float(x) for x in a_all_leaves]),
+                "b": summarize_floats([float(x) for x in b_all_leaves]),
             },
         }
 
@@ -238,7 +249,7 @@ def analyze_size_conditioned(
     return payload
 
 
-def _load_seed_details(base_dir: Path) -> dict[int, list[dict[str, int]]]:
+def load_seed_details(base_dir: Path) -> dict[int, list[dict[str, int]]]:
     """Load final_molecule_details from per-seed summary files."""
     seed_data: dict[int, list[dict[str, int]]] = {}
     summary_paths = sorted(base_dir.glob("seed_*/summary_seed_*.json"))
@@ -247,6 +258,10 @@ def _load_seed_details(base_dir: Path) -> dict[int, list[dict[str, int]]]:
     for path in summary_paths:
         row = json.loads(path.read_text(encoding="utf-8"))
         seed_id = int(row["seed_id"])
+        if "final_molecule_details" not in row:
+            logger.warning(
+                "%s: missing 'final_molecule_details', using empty list", path
+            )
         details = row.get("final_molecule_details", [])
         seed_data[seed_id] = details
     return seed_data

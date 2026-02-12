@@ -46,8 +46,9 @@ class TestAblationConfig:
             AblationConfig(mutation_enabled=True, mutation_rate=1.1)
 
     def test_energy_cost_range(self):
-        """energy_cost_per_node must be > 0."""
+        """energy_cost_per_node must be >= 0."""
         AblationConfig(energy_enabled=True, energy_cost_per_node=0.001)
+        AblationConfig(energy_enabled=True, energy_cost_per_node=0.0)
         with pytest.raises(ValueError):
             AblationConfig(energy_enabled=True, energy_cost_per_node=-0.001)
 

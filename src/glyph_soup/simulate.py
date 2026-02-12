@@ -55,6 +55,32 @@ def run_experiment_b(
     )
 
 
+def _finalize_result(
+    cfg: SimulationConfig,
+    reactor: Reactor,
+    observer: Observer,
+    snapshots: dict[str, dict[str, object]],
+) -> SimulationRunResult:
+    """Build SimulationRunResult from final reactor state."""
+    histogram: dict[int, int] = {}
+    details: list[dict[str, int]] = []
+    for mol in reactor.tank:
+        ma = exact_ma(mol)
+        histogram[ma] = histogram.get(ma, 0) + 1
+        details.append({"leaves": mol.leaves_count, "ma": ma})
+
+    return SimulationRunResult(
+        seed_id=cfg.seed_id,
+        steps=cfg.max_steps,
+        records=observer.records,
+        snapshots=snapshots,
+        final_sorted_molecules=sorted(mol.flat for mol in reactor.tank),
+        final_ma_histogram=histogram,
+        final_molecule_details=details,
+        observer=observer,
+    )
+
+
 def _run_experiment(
     cfg: SimulationConfig,
     *,
@@ -89,23 +115,7 @@ def _run_experiment(
                 "sorted_molecules": sorted(mol.flat for mol in reactor.tank),
             }
 
-    histogram: dict[int, int] = {}
-    details: list[dict[str, int]] = []
-    for mol in reactor.tank:
-        ma = exact_ma(mol)
-        histogram[ma] = histogram.get(ma, 0) + 1
-        details.append({"leaves": mol.leaves_count, "ma": ma})
-
-    return SimulationRunResult(
-        seed_id=cfg.seed_id,
-        steps=cfg.max_steps,
-        records=observer.records,
-        snapshots=snapshots,
-        final_sorted_molecules=sorted(mol.flat for mol in reactor.tank),
-        final_ma_histogram=histogram,
-        final_molecule_details=details,
-        observer=observer,
-    )
+    return _finalize_result(cfg, reactor, observer, snapshots)
 
 
 def run_experiment_c(
@@ -195,23 +205,7 @@ def _run_experiment_c(
                 "sorted_molecules": sorted(mol.flat for mol in reactor.tank),
             }
 
-    histogram: dict[int, int] = {}
-    details: list[dict[str, int]] = []
-    for mol in reactor.tank:
-        ma = exact_ma(mol)
-        histogram[ma] = histogram.get(ma, 0) + 1
-        details.append({"leaves": mol.leaves_count, "ma": ma})
-
-    return SimulationRunResult(
-        seed_id=cfg.seed_id,
-        steps=cfg.max_steps,
-        records=observer.records,
-        snapshots=snapshots,
-        final_sorted_molecules=sorted(mol.flat for mol in reactor.tank),
-        final_ma_histogram=histogram,
-        final_molecule_details=details,
-        observer=observer,
-    )
+    return _finalize_result(cfg, reactor, observer, snapshots)
 
 
 def run_experiment_a_batch(

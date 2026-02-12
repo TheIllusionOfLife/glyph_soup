@@ -141,7 +141,7 @@ def main() -> None:
     for seed_id, result in run_experiment_c_batch(cfg, seed_ids=seed_ids):
         _write_run_outputs(result, stage_dir / f"seed_{seed_id}")
 
-    print(f"Stage {args.stage} complete: {len(list(seed_ids))} seeds", file=sys.stderr)
+    print(f"Stage {args.stage} complete: {len(seed_ids)} seeds", file=sys.stderr)
 
 
 if __name__ == "__main__":

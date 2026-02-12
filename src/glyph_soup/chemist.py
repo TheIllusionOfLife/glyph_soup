@@ -115,19 +115,21 @@ class Chemist:
             and cfg.catalysis.enabled
             and len(reactor.tank) >= 2
         ):
-            protector_idx = rng.randrange(len(reactor.tank))
-            if protector_idx != idx:
-                protector = reactor.tank[protector_idx]
-                matched = catalysis_matches(
-                    cfg.catalysis.mode,
-                    protector,
-                    target,
-                    target,
-                    seed_id=cfg.seed_id,
-                    match_prob=cfg.catalysis.random_table_match_prob,
-                )
-                if matched:
-                    p_break *= cfg.ablation.resistance_factor
+            while True:
+                protector_idx = rng.randrange(len(reactor.tank))
+                if protector_idx != idx:
+                    break
+            protector = reactor.tank[protector_idx]
+            matched = catalysis_matches(
+                cfg.catalysis.mode,
+                protector,
+                target,
+                target,
+                seed_id=cfg.seed_id,
+                match_prob=cfg.catalysis.random_table_match_prob,
+            )
+            if matched:
+                p_break *= cfg.ablation.resistance_factor
 
         if rng.random() >= p_break:
             return None
