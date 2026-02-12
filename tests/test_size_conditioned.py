@@ -1,12 +1,9 @@
-"""Tests for Part 1: enriched output, a_max_lookup, size binning, and normalized assembly index."""
+"""Tests for Part 1: enriched output, a_max_lookup, size binning."""
 
 from __future__ import annotations
 
-import json
-
-from glyph_soup.assembly import a_max_lookup, exact_ma
+from glyph_soup.assembly import a_max_lookup
 from glyph_soup.config import SimulationConfig
-from glyph_soup.molecule import Atom, join
 from glyph_soup.simulate import run_experiment_a
 
 
@@ -51,7 +48,7 @@ class TestFinalMoleculeDetails:
 
 class TestAMaxLookup:
     def test_a_max_lookup_small_n(self):
-        """A_max values correct for small n (cross-check with exhaustive enumeration)."""
+        """A_max correct for small n (cross-check with exhaustive enum)."""
         lookup = a_max_lookup(max_n=6, alphabet="ABCD", symmetric=False)
 
         assert isinstance(lookup, dict)

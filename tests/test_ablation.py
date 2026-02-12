@@ -6,7 +6,7 @@ import random
 
 import pytest
 
-from glyph_soup.chemist import Chemist, ReactionEvent
+from glyph_soup.chemist import Chemist
 from glyph_soup.config import (
     AblationConfig,
     CatalysisConfig,
@@ -15,7 +15,6 @@ from glyph_soup.config import (
 from glyph_soup.molecule import Atom, Compound, join, mutate_leaf
 from glyph_soup.reactor import Reactor
 from glyph_soup.simulate import run_experiment_c
-
 
 # ---------- AblationConfig tests ----------
 
@@ -82,7 +81,6 @@ class TestMutateLeaf:
     def test_returns_valid_molecule(self):
         """mutate_leaf returns a molecule with the same structure."""
         mol = join(Atom("A"), Atom("B"))
-        rng = random.Random(42)
         mutated = mutate_leaf(mol, 0, "C")
         assert isinstance(mutated, Compound)
         assert mutated.leaves_count == mol.leaves_count
@@ -90,7 +88,7 @@ class TestMutateLeaf:
     def test_changes_specified_leaf(self):
         """Only the target leaf at the given position changes."""
         mol = join(join(Atom("A"), Atom("B")), Atom("C"))
-        # Position 0 = first leaf (A), position 1 = second leaf (B), position 2 = third leaf (C)
+        # Position 0=A, position 1=B, position 2=C
         mutated = mutate_leaf(mol, 0, "D")
         # Check that leaf at position 0 changed to D
         assert isinstance(mutated, Compound)
@@ -140,9 +138,6 @@ class TestBreakWithResistance:
             catalysis=CatalysisConfig(enabled=True, mode="substring", boost=2.0),
             ablation=AblationConfig(resistance_enabled=True, resistance_factor=0.5),
         )
-        # Build: (A,B) and atom A as protector (substring match: "A" in "(A,B)")
-        ab = join(Atom("A"), Atom("B"))
-        reactor = Reactor([ab, Atom("A"), Atom("C")])
         chemist = Chemist()
 
         # Run many trials and count breaks
@@ -216,11 +211,6 @@ class TestEnergyDecay:
             ablation=AblationConfig(energy_enabled=True, energy_cost_per_node=0.3),
         )
         chemist = Chemist()
-
-        # Large molecule: 4 leaves, 3 internal nodes
-        big = join(join(Atom("A"), Atom("B")), join(Atom("C"), Atom("D")))
-        # Small molecule: 2 leaves, 1 internal node
-        small = join(Atom("A"), Atom("B"))
 
         big_decay = 0
         small_decay = 0

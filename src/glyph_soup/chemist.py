@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from glyph_soup.catalysis import catalysis_matches
 from glyph_soup.config import BreakFunction, SimulationConfig
 from glyph_soup.molecule import (
-    Atom,
     Compound,
     Molecule,
     break_fragments_at,
@@ -111,7 +110,11 @@ class Chemist:
         p_break = self.break_probability(target, cfg.break_function)
 
         # C-2: Catalyst resistance — matched molecules are harder to break
-        if cfg.ablation.resistance_enabled and cfg.catalysis.enabled and len(reactor.tank) >= 2:
+        if (
+            cfg.ablation.resistance_enabled
+            and cfg.catalysis.enabled
+            and len(reactor.tank) >= 2
+        ):
             protector_idx = rng.randrange(len(reactor.tank))
             if protector_idx != idx:
                 protector = reactor.tank[protector_idx]
@@ -160,7 +163,7 @@ class Chemist:
         cfg: SimulationConfig,
         rng: random.Random,
     ) -> ReactionEvent | None:
-        """C-3: With probability mutation_rate, mutate a random leaf in a random molecule."""
+        """C-3: Mutate a random leaf with probability mutation_rate."""
         if not cfg.ablation.mutation_enabled:
             return None
         if rng.random() >= cfg.ablation.mutation_rate:
@@ -201,7 +204,9 @@ class Chemist:
         target = reactor.tank[idx]
         assert isinstance(target, Compound)
 
-        p_decay = min(1.0, cfg.ablation.energy_cost_per_node * target.internal_nodes_count)
+        p_decay = min(
+            1.0, cfg.ablation.energy_cost_per_node * target.internal_nodes_count
+        )
         if rng.random() >= p_decay:
             return None
 
@@ -209,4 +214,6 @@ class Chemist:
         removed = reactor.remove_indices((idx,))
         reactor.add(target.left)
         reactor.add(target.right)
-        return ReactionEvent("energy_decay", tuple(removed), (target.left, target.right))
+        return ReactionEvent(
+            "energy_decay", tuple(removed), (target.left, target.right)
+        )

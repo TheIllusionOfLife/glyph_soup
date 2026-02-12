@@ -85,7 +85,7 @@ def _wilcoxon_signed_rank(x: list[float], y: list[float]) -> dict[str, float]:
     if n != len(y):
         raise ValueError("x and y must have the same length")
 
-    diffs = [xi - yi for xi, yi in zip(x, y)]
+    diffs = [xi - yi for xi, yi in zip(x, y, strict=True)]
     # Remove zero differences
     nonzero = [(abs(d), d) for d in diffs if d != 0.0]
     n_eff = len(nonzero)
@@ -102,12 +102,12 @@ def _wilcoxon_signed_rank(x: list[float], y: list[float]) -> dict[str, float]:
         while j < n_eff and nonzero[j][0] == nonzero[i][0]:
             j += 1
         avg_rank = (i + j + 1) / 2.0
-        for k in range(i, j):
+        for _k in range(i, j):
             ranks.append(avg_rank)
         i = j
 
-    w_plus = sum(r for r, (_, d) in zip(ranks, nonzero) if d > 0)
-    w_minus = sum(r for r, (_, d) in zip(ranks, nonzero) if d < 0)
+    w_plus = sum(r for r, (_, d) in zip(ranks, nonzero, strict=True) if d > 0)
+    w_minus = sum(r for r, (_, d) in zip(ranks, nonzero, strict=True) if d < 0)
     w = min(w_plus, w_minus)
 
     # Normal approximation
@@ -206,10 +206,16 @@ def analyze_size_conditioned(
 
         # Size distribution summary
         a_all_leaves = [
-            d["leaves"] for seed in common_seeds for d in a_seeds[seed] if d["leaves"] > 1
+            d["leaves"]
+            for seed in common_seeds
+            for d in a_seeds[seed]
+            if d["leaves"] > 1
         ]
         b_all_leaves = [
-            d["leaves"] for seed in common_seeds for d in b_seeds[seed] if d["leaves"] > 1
+            d["leaves"]
+            for seed in common_seeds
+            for d in b_seeds[seed]
+            if d["leaves"] > 1
         ]
 
         results[mode_name] = {
