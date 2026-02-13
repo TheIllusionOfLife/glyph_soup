@@ -50,7 +50,7 @@ def _create_exp_a_dir(base: Path, seeds: range, a_total_base: int) -> Path:
 
 def test_compare_baselines(tmp_path):
     """Compare Exp A stable means across two alphabets."""
-    seeds = range(10)
+    seeds = range(100)
     dir_4 = _create_exp_a_dir(tmp_path / "alpha4", seeds, a_total_base=830)
     dir_8 = _create_exp_a_dir(tmp_path / "alpha8", seeds, a_total_base=1200)
 
@@ -70,7 +70,7 @@ def test_compare_baselines(tmp_path):
 
 def test_compare_baselines_identical_distributions(tmp_path):
     """Identical distributions should yield p > 0.05."""
-    seeds = range(10)
+    seeds = range(100)
     dir_a = _create_exp_a_dir(tmp_path / "alpha_a", seeds, a_total_base=830)
     dir_b = _create_exp_a_dir(tmp_path / "alpha_b", seeds, a_total_base=830)
 
