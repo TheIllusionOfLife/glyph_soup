@@ -98,8 +98,7 @@ def main() -> None:
 
     if args.alphabet is not None:
         out_path = args.output or Path(
-            f"outputs/alphabet_diagnostic/ceiling_gate/"
-            f"alphabet_{len(args.alphabet)}.json"
+            f"outputs/alphabet_diagnostic/ceiling_gate/alphabet_{args.alphabet}.json"
         )
         _run_and_save(args.alphabet, args, out_path)
         return

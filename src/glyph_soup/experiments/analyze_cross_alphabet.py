@@ -47,8 +47,10 @@ def _pairwise_comparisons(
 
     if len(raw_p_values) > 1:
         adjusted = holm_bonferroni(raw_p_values)
-        for i, pair in enumerate(pairwise):
-            pair["wilcoxon"]["p_value_adjusted"] = adjusted[i]
+    else:
+        adjusted = list(raw_p_values)
+    for i, pair in enumerate(pairwise):
+        pair["wilcoxon"]["p_value_adjusted"] = adjusted[i]
 
     return pairwise
 
@@ -57,7 +59,7 @@ def compare_baselines(dirs: dict[str, Path]) -> dict:
     """Compare Exp A stable A_total across alphabets (Wilcoxon paired by seed).
 
     Args:
-        dirs: Mapping of alphabet label → Exp A output directory.
+        dirs: Mapping of alphabet label -> Exp A output directory.
 
     Returns:
         Dict with per_alphabet summaries and pairwise Wilcoxon tests.
@@ -108,7 +110,7 @@ def compare_catalysis_effects(dirs: dict[str, Path]) -> dict:
     """Compare Exp B delta (B-A) across alphabets.
 
     Args:
-        dirs: Mapping of alphabet label → Exp B output directory.
+        dirs: Mapping of alphabet label -> Exp B output directory.
               Each directory should contain mode subdirectories.
 
     Returns:
@@ -121,7 +123,7 @@ def compare_ablation_effects(dirs: dict[str, Path]) -> dict:
     """Compare Exp C stages across alphabets.
 
     Args:
-        dirs: Mapping of alphabet label → Exp C output directory.
+        dirs: Mapping of alphabet label -> Exp C output directory.
               Each directory should contain stage subdirectories (c1, c2, ...).
 
     Returns:
